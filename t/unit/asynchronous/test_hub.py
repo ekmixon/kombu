@@ -21,9 +21,7 @@ class File:
         return self.fd
 
     def __eq__(self, other):
-        if isinstance(other, File):
-            return self.fd == other.fd
-        return NotImplemented
+        return self.fd == other.fd if isinstance(other, File) else NotImplemented
 
     def __hash__(self):
         return hash(self.fd)
@@ -67,7 +65,7 @@ class test_LaxBoundedSemaphore:
 
     def test_bounded(self):
         x = LaxBoundedSemaphore(2)
-        for i in range(100):
+        for _ in range(100):
             x.release()
         assert x.value == 2
 
@@ -96,24 +94,24 @@ class test_LaxBoundedSemaphore:
 
         assert not x._waiting
         x.grow(3)
-        for i in range(x.initial_value):
+        for _ in range(x.initial_value):
             assert x.acquire(Mock())
         assert not x.acquire(Mock())
         x.clear()
 
         x.shrink(3)
-        for i in range(x.initial_value):
+        for _ in range(x.initial_value):
             assert x.acquire(Mock())
         assert not x.acquire(Mock())
         assert x.value == 0
 
-        for i in range(100):
+        for _ in range(100):
             x.release()
         assert x.value == x.initial_value
 
     def test_clear(self):
         x = LaxBoundedSemaphore(10)
-        for i in range(11):
+        for _ in range(11):
             x.acquire(Mock())
         assert x._waiting
         assert x.value == 0
@@ -237,7 +235,7 @@ class test_Hub:
         self.hub.close()
         poller.close.assert_called_with()
         mock_callback.assert_called_once_with()
-        assert self.hub._ready == set()
+        assert not self.hub._ready
 
     def test_poller_regeneration_on_access(self):
         self.hub = Hub()

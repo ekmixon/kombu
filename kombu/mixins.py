@@ -185,7 +185,7 @@ class ConsumerMixin:
     def consume(self, limit=None, timeout=None, safety_interval=1, **kwargs):
         elapsed = 0
         with self.consumer_context(**kwargs) as (conn, channel, consumers):
-            for i in limit and range(limit) or count():
+            for _ in limit and range(limit) or count():
                 if self.should_stop:
                     break
                 self.on_iteration()

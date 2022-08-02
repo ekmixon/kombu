@@ -147,10 +147,16 @@ class test_Consumer:
         assert q.name == n
         assert q.exchange.name == n
 
-        c2 = compat.Consumer(self.connection, queue=n + '2',
-                             exchange=n + '2',
-                             routing_key='rkey', durable=False,
-                             auto_delete=True, exclusive=True)
+        c2 = compat.Consumer(
+            self.connection,
+            queue=f'{n}2',
+            exchange=f'{n}2',
+            routing_key='rkey',
+            durable=False,
+            auto_delete=True,
+            exclusive=True,
+        )
+
         q2 = c2.queues[0]
         assert not q2.durable
         assert not q2.exchange.durable
@@ -288,10 +294,11 @@ class test_ConsumerSet:
             assert cs.backend is c2
 
     def test_constructor(self, prefix='0daf8h21'):
-        dcon = {'%s.xyx' % prefix: {'exchange': '%s.xyx' % prefix,
-                                    'routing_key': 'xyx'},
-                '%s.xyz' % prefix: {'exchange': '%s.xyz' % prefix,
-                                    'routing_key': 'xyz'}}
+        dcon = {
+            f'{prefix}.xyx': {'exchange': f'{prefix}.xyx', 'routing_key': 'xyx'},
+            f'{prefix}.xyz': {'exchange': f'{prefix}.xyz', 'routing_key': 'xyz'},
+        }
+
         consumers = [compat.Consumer(self.connection, queue=prefix + str(i),
                                      exchange=prefix + str(i))
                      for i in range(3)]
@@ -301,18 +308,22 @@ class test_ConsumerSet:
         assert len(c.queues) == 3
         assert len(c2.queues) == 2
 
-        c.add_consumer(compat.Consumer(self.connection,
-                                       queue=prefix + 'xaxxxa',
-                                       exchange=prefix + 'xaxxxa'))
+        c.add_consumer(
+            compat.Consumer(
+                self.connection,
+                queue=f'{prefix}xaxxxa',
+                exchange=f'{prefix}xaxxxa',
+            )
+        )
+
         assert len(c.queues) == 4
         for cq in c.queues:
             assert cq.channel is c.channel
 
         c2.add_consumer_from_dict(
-            '%s.xxx' % prefix,
-            exchange='%s.xxx' % prefix,
-            routing_key='xxx',
+            f'{prefix}.xxx', exchange=f'{prefix}.xxx', routing_key='xxx'
         )
+
         assert len(c2.queues) == 3
         for c2q in c2.queues:
             assert c2q.channel is c2.channel

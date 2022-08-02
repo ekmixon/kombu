@@ -103,8 +103,7 @@ class _kqueue:
         return fd
 
     def unregister(self, fd):
-        events = self._active.pop(fd, None)
-        if events:
+        if events := self._active.pop(fd, None):
             try:
                 self._control(fd, events, KQ_EV_DELETE)
             except OSError:
@@ -156,10 +155,7 @@ class _kqueue:
             if k.filter == KQ_FILTER_READ:
                 events[fd] = events.get(fd, 0) | READ
             elif k.filter == KQ_FILTER_WRITE:
-                if k.flags & KQ_EV_EOF:
-                    events[fd] = ERR
-                else:
-                    events[fd] = events.get(fd, 0) | WRITE
+                events[fd] = ERR if k.flags & KQ_EV_EOF else events.get(fd, 0) | WRITE
             elif k.filter == KQ_EV_ERROR:
                 events[fd] = events.get(fd, 0) | ERR
             elif k.filter == KQ_FILTER_VNODE:

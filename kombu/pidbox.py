@@ -112,7 +112,7 @@ class Node:
         return reply
 
     def handle(self, method, arguments=None):
-        arguments = {} if not arguments else arguments
+        arguments = arguments or {}
         return self.handlers[method](self.state, **arguments)
 
     def handle_call(self, method, arguments):
@@ -128,15 +128,17 @@ class Node:
         if message:
             self.adjust_clock(message.headers.get('clock') or 0)
         hostname = self.hostname
-        run_dispatch = False
-        if destination:
-            if hostname in destination:
-                run_dispatch = True
-        elif pattern and matcher:
-            if match(hostname, pattern, matcher):
-                run_dispatch = True
-        else:
-            run_dispatch = True
+        run_dispatch = bool(
+            destination
+            and hostname in destination
+            or not destination
+            and pattern
+            and matcher
+            and match(hostname, pattern, matcher)
+            or not destination
+            and (not pattern or not matcher)
+        )
+
         if run_dispatch:
             return self.dispatch(**body)
     dispatch_from_message = handle_message
@@ -206,23 +208,23 @@ class Mailbox:
 
     def call(self, destination, command, kwargs=None,
              timeout=None, callback=None, channel=None):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         return self._broadcast(command, kwargs, destination,
                                reply=True, timeout=timeout,
                                callback=callback,
                                channel=channel)
 
     def cast(self, destination, command, kwargs=None):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         return self._broadcast(command, kwargs, destination, reply=False)
 
     def abcast(self, command, kwargs=None):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         return self._broadcast(command, kwargs, reply=False)
 
     def multi_call(self, command, kwargs=None, timeout=1,
                    limit=None, callback=None, channel=None):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         return self._broadcast(command, kwargs, reply=True,
                                timeout=timeout, limit=limit,
                                callback=callback,
@@ -312,16 +314,14 @@ class Mailbox:
                    callback=None, channel=None, serializer=None,
                    pattern=None, matcher=None):
         if destination is not None and \
-                not isinstance(destination, (list, tuple)):
-            raise ValueError(
-                'destination must be a list/tuple not {}'.format(
-                    type(destination)))
+                    not isinstance(destination, (list, tuple)):
+            raise ValueError(f'destination must be a list/tuple not {type(destination)}')
         if (pattern is not None and not isinstance(pattern, str) and
                 matcher is not None and not isinstance(matcher, str)):
             raise ValueError(
-                'pattern and matcher must be '
-                'strings not {}, {}'.format(type(pattern), type(matcher))
+                f'pattern and matcher must be strings not {type(pattern)}, {type(matcher)}'
             )
+
 
         arguments = arguments or {}
         reply_ticket = reply and uuid() or None

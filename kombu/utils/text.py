@@ -49,7 +49,7 @@ def version_string_as_tuple(s):
         v = version_info_t(v.major, v.minor, *_splitmicro(*v[2:]))
     # X.Y.3a1-40 -> (X, Y, 3, 'a1', '40')
     if not v.serial and v.releaselevel and '-' in v.releaselevel:
-        v = version_info_t(*list(v[0:3]) + v.releaselevel.split('-'))
+        v = version_info_t(*list(v[:3]) + v.releaselevel.split('-'))
     return v
 
 

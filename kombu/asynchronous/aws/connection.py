@@ -48,9 +48,7 @@ class AsyncHTTPResponse:
 
     @property
     def reason(self):
-        if self.response.error:
-            return self.response.error.message
-        return ''
+        return self.response.error.message if self.response.error else ''
 
     def __repr__(self):
         return repr(self.response)
@@ -245,26 +243,24 @@ class AsyncAWSQueryConnection(AsyncConnection):
 
     def _on_obj_ready(self, parent, operation, response):
         service_model = self.sqs_connection.meta.service_model
-        if response.status == self.STATUS_CODE_OK:
-            _, parsed = get_response(
-                service_model.operation_model(operation), response.response
-            )
-            return parsed
-        else:
+        if response.status != self.STATUS_CODE_OK:
             raise self._for_status(response, response.read())
+        _, parsed = get_response(
+            service_model.operation_model(operation), response.response
+        )
+        return parsed
 
     def _on_status_ready(self, parent, operation, response):
         service_model = self.sqs_connection.meta.service_model
-        if response.status == self.STATUS_CODE_OK:
-            httpres, _ = get_response(
-                service_model.operation_model(operation), response.response
-            )
-            return httpres.code
-        else:
+        if response.status != self.STATUS_CODE_OK:
             raise self._for_status(response, response.read())
+        httpres, _ = get_response(
+            service_model.operation_model(operation), response.response
+        )
+        return httpres.code
 
     def _for_status(self, response, body):
-        context = 'Empty body' if not body else 'HTTP Error'
-        return Exception("Request {}  HTTP {}  {} ({})".format(
-            context, response.status, response.reason, body
-        ))
+        context = 'HTTP Error' if body else 'Empty body'
+        return Exception(
+            f"Request {context}  HTTP {response.status}  {response.reason} ({body})"
+        )

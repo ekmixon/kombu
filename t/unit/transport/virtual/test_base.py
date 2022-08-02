@@ -327,13 +327,14 @@ class test_Channel:
         c.exchange_declare(n)
         c.queue_declare(n)
         c.queue_bind(n, n, n)
-        c.queue_declare(n + '2')
-        c.queue_bind(n + '2', n, n)
+        c.queue_declare(f'{n}2')
+        c.queue_bind(f'{n}2', n, n)
         messages = []
         c.connection._deliver = Mock(name='_deliver')
 
         def on_deliver(message, queue):
             messages.append(message)
+
         c.connection._deliver.side_effect = on_deliver
 
         m = c.prepare_message('nthex quick brown fox...')
@@ -346,9 +347,11 @@ class test_Channel:
 
         consumer_tag = uuid()
 
-        c.basic_consume(n + '2', False,
-                        consumer_tag=consumer_tag, callback=lambda *a: None)
-        assert n + '2' in c._active_queues
+        c.basic_consume(
+            f'{n}2', False, consumer_tag=consumer_tag, callback=lambda *a: None
+        )
+
+        assert f'{n}2' in c._active_queues
         c.drain_events()
         r2 = c.message_to_python(messages[-1])
         assert r2.body == b'nthex quick brown fox...'

@@ -137,9 +137,8 @@ class Consumer(messaging.Consumer):
         if no_ack is None:
             no_ack = self.no_ack
         message = self.queues[0].get(no_ack)
-        if message:
-            if enable_callbacks:
-                self.receive(message.payload, message)
+        if message and enable_callbacks:
+            self.receive(message.payload, message)
         return message
 
     def process_next(self):
@@ -162,7 +161,7 @@ class Consumer(messaging.Consumer):
         for items_since_start in count():  # for infinity
             item = self.fetch()
             if (not infinite and item is None) or \
-                    (limit and items_since_start >= limit):
+                        (limit and items_since_start >= limit):
                 break
             yield item
 
@@ -183,8 +182,10 @@ class ConsumerSet(messaging.Consumer):
             for consumer in consumers:
                 queues.extend(consumer.queues)
         if from_dict:
-            for queue_name, queue_options in from_dict.items():
-                queues.append(Queue.from_dict(queue_name, **queue_options))
+            queues.extend(
+                Queue.from_dict(queue_name, **queue_options)
+                for queue_name, queue_options in from_dict.items()
+            )
 
         super().__init__(self.backend, queues, **kwargs)
 

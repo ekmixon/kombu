@@ -19,14 +19,13 @@ def emergency_dump_state(state, open_file=open, dump=None, stderr=None):
           file=stderr)
     fh = open_file(persist, 'w')
     try:
-        try:
-            dump(state, fh, protocol=0)
-        except Exception as exc:
-            print(
-                f'Cannot pickle state: {exc!r}. Fallback to pformat.',
-                file=stderr,
-            )
-            fh.write(default_encode(pformat(state)))
+        dump(state, fh, protocol=0)
+    except Exception as exc:
+        print(
+            f'Cannot pickle state: {exc!r}. Fallback to pformat.',
+            file=stderr,
+        )
+        fh.write(default_encode(pformat(state)))
     finally:
         fh.flush()
         fh.close()

@@ -23,8 +23,7 @@ def pytest_configure(config):
 
 
 def pytest_runtest_setup(item):
-    envnames = [mark.args[0] for mark in item.iter_markers(name='env')]
-    if envnames:
+    if envnames := [mark.args[0] for mark in item.iter_markers(name='env')]:
         if (
             item.config.getoption("-E") is None
             or len(set(item.config.getoption("-E")) & set(envnames)) == 0

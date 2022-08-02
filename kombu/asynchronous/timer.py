@@ -105,15 +105,15 @@ class Timer:
         self.stop()
 
     def call_at(self, eta, fun, args=(), kwargs=None, priority=0):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         return self.enter_at(self.Entry(fun, args, kwargs), eta, priority)
 
     def call_after(self, secs, fun, args=(), kwargs=None, priority=0):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         return self.enter_after(secs, self.Entry(fun, args, kwargs), priority)
 
     def call_repeatedly(self, secs, fun, args=(), kwargs=None, priority=0):
-        kwargs = {} if not kwargs else kwargs
+        kwargs = kwargs or {}
         tref = self.Entry(fun, args, kwargs)
 
         @wraps(fun)

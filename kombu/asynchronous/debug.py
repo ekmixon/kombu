@@ -6,9 +6,7 @@ from kombu.utils.functional import reprcall
 
 def repr_flag(flag):
     """Return description of event loop flag."""
-    return '{}{}{}'.format('R' if flag & READ else '',
-                           'W' if flag & WRITE else '',
-                           '!' if flag & ERR else '')
+    return f"{'R' if flag & READ else ''}{'W' if flag & WRITE else ''}{'!' if flag & ERR else ''}"
 
 
 def _rcb(obj):
@@ -30,10 +28,7 @@ def repr_active(h):
 def repr_events(h, events):
     """Return description of events returned by poll."""
     return ', '.join(
-        '{}({})->{}'.format(
-            _rcb(callback_for(h, fd, fl, '(GONE)')), fd,
-            repr_flag(fl),
-        )
+        f"{_rcb(callback_for(h, fd, fl, '(GONE)'))}({fd})->{repr_flag(fl)}"
         for fd, fl in events
     )
 
@@ -56,9 +51,7 @@ def callback_for(h, fd, flag, *default):
         if flag & READ:
             return h.readers[fd]
         if flag & WRITE:
-            if fd in h.consolidate:
-                return h.consolidate_callback
-            return h.writers[fd]
+            return h.consolidate_callback if fd in h.consolidate else h.writers[fd]
     except KeyError:
         if default:
             return default[0]

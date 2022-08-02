@@ -199,11 +199,8 @@ class Channel(virtual.Channel):
 
         This simply writes a key to the K/V store of Consul
         """
-        key = '{}/msg/{}_{}'.format(
-            self._key_prefix(queue),
-            int(round(monotonic() * 1000)),
-            uuid.uuid4(),
-        )
+        key = f'{self._key_prefix(queue)}/msg/{int(round(monotonic() * 1000))}_{uuid.uuid4()}'
+
         if not self.client.kv.put(key=key, value=dumps(payload), cas=0):
             raise ChannelError(f'Cannot add key {key!r} to consul')
 

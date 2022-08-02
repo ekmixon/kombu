@@ -133,7 +133,7 @@ class Channel(virtual.Channel):
             self.conninfo.hostname)
 
         # Convert
-        endpoint = 'sb://' + self._namespace
+        endpoint = f'sb://{self._namespace}'
         if not endpoint.endswith('.net'):
             endpoint += '.servicebus.windows.net'
 
@@ -143,7 +143,8 @@ class Channel(virtual.Channel):
             'SharedAccessKey': self._sas_key,
         }
         self._connection_string = ';'.join(
-            [key + '=' + value for key, value in conn_dict.items()])
+            [f'{key}={value}' for key, value in conn_dict.items()]
+        )
 
     def basic_consume(self, queue, no_ack, *args, **kwargs):
         if no_ack:
@@ -228,8 +229,7 @@ class Channel(virtual.Channel):
         queue = self.entity_name(self.queue_name_prefix + queue)
 
         self._queue_mgmt_service.delete_queue(queue)
-        send_receive_obj = self._queue_cache.pop(queue, None)
-        if send_receive_obj:
+        if send_receive_obj := self._queue_cache.pop(queue, None):
             send_receive_obj.close()
 
     def _put(self, queue: str, message, **kwargs) -> None:
@@ -247,7 +247,7 @@ class Channel(virtual.Channel):
         """Try to retrieve a single message off ``queue``."""
         # If we're not ack'ing for this queue, just change receive_mode
         recv_mode = ServiceBusReceiveMode.RECEIVE_AND_DELETE \
-            if queue in self._noack_queues else ServiceBusReceiveMode.PEEK_LOCK
+                if queue in self._noack_queues else ServiceBusReceiveMode.PEEK_LOCK
 
         queue = self.entity_name(self.queue_name_prefix + queue)
 
@@ -261,10 +261,11 @@ class Channel(virtual.Channel):
 
         # message.body is either byte or generator[bytes]
         message = messages[0]
-        if not isinstance(message.body, bytes):
-            body = b''.join(message.body)
-        else:
-            body = message.body
+        body = (
+            message.body
+            if isinstance(message.body, bytes)
+            else b''.join(message.body)
+        )
 
         msg = loads(bytes_to_str(body))
         msg['properties']['delivery_info']['azure_message'] = message
@@ -308,11 +309,11 @@ class Channel(virtual.Channel):
         # By default all the receivers will be in PEEK_LOCK receive mode
         queue_obj = self._queue_cache.get(queue, None)
         if queue not in self._noack_queues or \
-           queue_obj is None or queue_obj.receiver is None:
+               queue_obj is None or queue_obj.receiver is None:
             queue_obj = self._get_asb_receiver(
-                queue,
-                ServiceBusReceiveMode.RECEIVE_AND_DELETE, 'purge_' + queue
+                queue, ServiceBusReceiveMode.RECEIVE_AND_DELETE, f'purge_{queue}'
             )
+
 
         while True:
             messages = queue_obj.receiver.receive_messages(
@@ -438,8 +439,4 @@ class Transport(virtual.Transport):
     @classmethod
     def as_uri(cls, uri: str, include_password=False, mask='**') -> str:
         namespace, policy, sas_key = cls.parse_uri(uri)
-        return 'azureservicebus://{}:{}@{}'.format(
-            policy,
-            sas_key if include_password else mask,
-            namespace
-        )
+        return f'azureservicebus://{policy}:{sas_key if include_password else mask}@{namespace}'

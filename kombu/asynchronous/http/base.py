@@ -190,9 +190,8 @@ class Response:
             Accessing this property will evaluate the buffer
             and subsequent accesses will be cached.
         """
-        if self._body is None:
-            if self.buffer is not None:
-                self._body = self.buffer.getvalue()
+        if self._body is None and self.buffer is not None:
+            self._body = self.buffer.getvalue()
         return self._body
 
     # these are for compatibility with Requests

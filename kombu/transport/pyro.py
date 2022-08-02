@@ -200,11 +200,15 @@ if pyro is not None:
 if __name__ == "__main__":
     print("Launching Broker for Kombu's Pyro transport.")
     with pyro.Daemon() as daemon:
-        print("(Expecting a Pyro name server at {}:{})"
-              .format(pyro.config.NS_HOST, pyro.config.NS_PORT))
+        print(
+            f"(Expecting a Pyro name server at {pyro.config.NS_HOST}:{pyro.config.NS_PORT})"
+        )
+
         with pyro.locateNS() as ns:
-            print("You can connect with Kombu using the url "
-                  "'pyro://{}/kombu.broker'".format(pyro.config.NS_HOST))
+            print(
+                f"You can connect with Kombu using the url 'pyro://{pyro.config.NS_HOST}/kombu.broker'"
+            )
+
             uri = daemon.register(KombuBroker)
             ns.register("kombu.broker", uri)
         daemon.requestLoop()

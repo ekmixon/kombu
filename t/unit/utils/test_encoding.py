@@ -43,10 +43,10 @@ class newbytes(bytes):
     """Mock class to simulate python-future newbytes class"""
 
     def __repr__(self):
-        return 'b' + super().__repr__()
+        return f'b{super().__repr__()}'
 
     def __str__(self):
-        return 'b' + f"'{super().__str__()}'"
+        return f"b'{super().__str__()}'"
 
 
 class newstr(str):

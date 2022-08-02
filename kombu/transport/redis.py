@@ -222,11 +222,7 @@ class GlobalKeyPrefixMixin:
             args_end = self.PREFIXED_COMPLEX_COMMANDS[command]["args_end"]
 
             pre_args = args[:args_start] if args_start > 0 else []
-            post_args = []
-
-            if args_end is not None:
-                post_args = args[args_end:]
-
+            post_args = args[args_end:] if args_end is not None else []
             args = pre_args + [
                 self.global_keyprefix + str(arg)
                 for arg in args[args_start:args_end]
@@ -302,9 +298,9 @@ class QoS(virtual.QoS):
 
         with self.pipe_or_acquire() as pipe:
             pipe.zadd(self.unacked_index_key, *zadd_args) \
-                .hset(self.unacked_key, delivery_tag,
+                    .hset(self.unacked_key, delivery_tag,
                       dumps([message._raw, EX, RK])) \
-                .execute()
+                    .execute()
             super().append(message, delivery_tag)
 
     def restore_unacked(self, client=None):
@@ -465,9 +461,8 @@ class MultiChannelPoller:
 
     def on_poll_start(self):
         for channel in self._channels:
-            if channel.active_queues:           # BRPOP mode?
-                if channel.qos.can_consume():
-                    self._register_BRPOP(channel)
+            if channel.active_queues and channel.qos.can_consume():
+                self._register_BRPOP(channel)
             if channel.active_fanout_queues:    # LISTEN mode?
                 self._register_LISTEN(channel)
 
@@ -510,17 +505,14 @@ class MultiChannelPoller:
         self._in_protected_read = True
         try:
             for channel in self._channels:
-                if channel.active_queues:           # BRPOP mode?
-                    if channel.qos.can_consume():
-                        self._register_BRPOP(channel)
+                if channel.active_queues and channel.qos.can_consume():
+                    self._register_BRPOP(channel)
                 if channel.active_fanout_queues:    # LISTEN mode?
                     self._register_LISTEN(channel)
 
-            events = self.poller.poll(timeout)
-            if events:
+            if events := self.poller.poll(timeout):
                 for fileno, event in events:
-                    ret = self.handle_event(fileno, event)
-                    if ret:
+                    if ret := self.handle_event(fileno, event):
                         return
             # - no new data, so try to restore messages.
             # - reset active redis commands.
@@ -760,12 +752,7 @@ class Channel(virtual.Channel):
         return ret
 
     def basic_cancel(self, consumer_tag):
-        # If we are busy reading messages we may experience
-        # a race condition where a message is consumed after
-        # canceling, so we must delay this operation until reading
-        # is complete (Issue celery/celery#1773).
-        connection = self.connection
-        if connection:
+        if connection := self.connection:
             if connection.cycle._in_protected_read:
                 return connection.cycle.after_read.add(
                     promise(self._basic_cancel, (consumer_tag,)),
@@ -915,8 +902,7 @@ class Channel(virtual.Channel):
     def _get(self, queue):
         with self.conn_or_acquire() as client:
             for pri in self.priority_steps:
-                item = client.rpop(self._q_for_pri(queue, pri))
-                if item:
+                if item := client.rpop(self._q_for_pri(queue, pri)):
                     return loads(bytes_to_str(item))
             raise Empty()
 
@@ -930,10 +916,7 @@ class Channel(virtual.Channel):
                            if isinstance(size, numbers.Integral))
 
     def _q_for_pri(self, queue, pri):
-        pri = self.priority(pri)
-        if pri:
-            return f"{queue}{self.sep}{pri}"
-        return queue
+        return f"{queue}{self.sep}{pri}" if (pri := self.priority(pri)) else queue
 
     def priority(self, n):
         steps = self.priority_steps
@@ -993,11 +976,11 @@ class Channel(virtual.Channel):
         key = self.keyprefix_queue % exchange
         with self.conn_or_acquire() as client:
             values = client.smembers(key)
-            if not values:
-                # table does not exists since all queues bound to the exchange
-                # were deleted. We need just return empty list.
-                return []
-            return [tuple(bytes_to_str(val).split(self.sep)) for val in values]
+            return (
+                [tuple(bytes_to_str(val).split(self.sep)) for val in values]
+                if values
+                else []
+            )
 
     def _purge(self, queue):
         with self.conn_or_acquire() as client:
@@ -1043,10 +1026,7 @@ class Channel(virtual.Channel):
             try:
                 vhost = int(vhost)
             except ValueError:
-                raise ValueError(
-                    'Database is int between 0 and limit - 1, not {}'.format(
-                        vhost,
-                    ))
+                raise ValueError(f'Database is int between 0 and limit - 1, not {vhost}')
         return vhost
 
     def _filter_tcp_connparams(self, socket_keepalive=None,
@@ -1084,7 +1064,7 @@ class Channel(virtual.Channel):
             # Connection(ssl={}) must be a dict containing the keys:
             # 'ssl_cert_reqs', 'ssl_ca_certs', 'ssl_certfile', 'ssl_keyfile'
             try:
-                connparams.update(conninfo.ssl)
+                connparams |= conninfo.ssl
                 connparams['connection_class'] = self.connection_class_ssl
             except TypeError:
                 pass
@@ -1093,9 +1073,14 @@ class Channel(virtual.Channel):
             scheme, _, _, username, password, path, query = _parse_url(host)
             if scheme == 'socket':
                 connparams = self._filter_tcp_connparams(**connparams)
-                connparams.update({
-                    'connection_class': redis.UnixDomainSocketConnection,
-                    'path': '/' + path}, **query)
+                connparams.update(
+                    {
+                        'connection_class': redis.UnixDomainSocketConnection,
+                        'path': f'/{path}',
+                    },
+                    **query,
+                )
+
 
                 connparams.pop('socket_connect_timeout', None)
                 connparams.pop('socket_keepalive', None)

@@ -65,10 +65,10 @@ class SimpleBase:
                 remaining = timeout - elapsed
 
     def get_nowait(self):
-        m = self.queue.get(no_ack=self.no_ack, accept=self.consumer.accept)
-        if not m:
+        if m := self.queue.get(no_ack=self.no_ack, accept=self.consumer.accept):
+            return m
+        else:
             raise self.Empty()
-        return m
 
     def put(self, message, serializer=None, headers=None, compression=None,
             routing_key=None, **kwargs):

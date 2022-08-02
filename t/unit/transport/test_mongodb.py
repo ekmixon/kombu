@@ -12,6 +12,8 @@ pymongo = pytest.importorskip('pymongo')
 def _create_mock_connection(url='', **kwargs):
     from kombu.transport import mongodb
 
+
+
     class _Channel(mongodb.Channel):
         # reset _fanout_queues for each instance
         _fanout_queues = {}
@@ -27,8 +29,7 @@ def _create_mock_connection(url='', **kwargs):
                 try:
                     return self.collections[name]
                 except KeyError:
-                    mock = self.collections[name] = MagicMock(
-                        name='collection:%s' % name)
+                    mock = self.collections[name] = MagicMock(name=f'collection:{name}')
 
                     return mock
 
@@ -38,6 +39,7 @@ def _create_mock_connection(url='', **kwargs):
 
         def get_now(self):
             return self.now
+
 
     class Transport(mongodb.Transport):
         Channel = _Channel

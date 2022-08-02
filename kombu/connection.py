@@ -175,7 +175,7 @@ class Connection:
             if '://' in hostname and '+' in hostname[:hostname.index('://')]:
                 # e.g. sqla+mysql://root:masterkey@localhost/
                 params['transport'], params['hostname'] = \
-                    hostname.split('+', 1)
+                        hostname.split('+', 1)
                 self.uri_prefix = params['transport']
             elif '://' in hostname:
                 transport = transport or urlparse(hostname).scheme
@@ -637,7 +637,7 @@ class Connection:
         if self.uri_prefix:
             hostname = f'{self.uri_prefix}+{hostname}'
 
-        info = (
+        return (
             ('hostname', hostname),
             ('userid', self.userid or D.get('userid')),
             ('password', self.password or D.get('password')),
@@ -654,7 +654,6 @@ class Connection:
             ('failover_strategy', self._failover_strategy),
             ('alternates', self.alt),
         )
-        return info
 
     def info(self):
         """Get connection info."""
@@ -838,8 +837,7 @@ class Connection:
 
     def _extract_failover_opts(self):
         conn_opts = {}
-        transport_opts = self.transport_options
-        if transport_opts:
+        if transport_opts := self.transport_options:
             if 'max_retries' in transport_opts:
                 conn_opts['max_retries'] = transport_opts['max_retries']
             if 'interval_start' in transport_opts:
@@ -866,11 +864,13 @@ class Connection:
             depend on the interface of this object.
         """
         if not self._closed:
-            if not self.connected:
-                return self._ensure_connection(
+            return (
+                self._connection
+                if self.connected
+                else self._ensure_connection(
                     max_retries=1, reraise_as_library_errors=False
                 )
-            return self._connection
+            )
 
     def _connection_factory(self):
         self.declared_entities.clear()
@@ -1049,9 +1049,7 @@ def maybe_channel(channel):
     Return the default channel if argument is a connection instance,
     otherwise just return the channel given.
     """
-    if is_connection(channel):
-        return channel.default_channel
-    return channel
+    return channel.default_channel if is_connection(channel) else channel
 
 
 def is_connection(obj):

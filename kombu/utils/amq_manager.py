@@ -8,9 +8,14 @@ def get_manager(client, hostname=None, port=None, userid=None,
     opt = client.transport_options.get
 
     def get(name, val, default):
-        return (val if val is not None
-                else opt('manager_%s' % name) or
-                getattr(client, name, None) or default)
+        return (
+            val
+            if val is not None
+            else opt(f'manager_{name}')
+            or getattr(client, name, None)
+            or default
+        )
+
 
     host = get('hostname', hostname, 'localhost')
     port = port if port is not None else opt('manager_port', 15672)

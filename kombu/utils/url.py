@@ -59,7 +59,7 @@ def url_to_parts(url):
     scheme = urlparse(url).scheme
     schemeless = url[len(scheme) + 3:]
     # parse with HTTP URL semantics
-    parts = urlparse('http://' + schemeless)
+    parts = urlparse(f'http://{schemeless}')
     path = parts.path or ''
     path = path[1:] if path and path[0] == '/' else path
     return urlparts(

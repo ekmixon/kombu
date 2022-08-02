@@ -28,7 +28,7 @@ class test_shufflecycle:
             values = {'A', 'B', 'C'}
             cycle = utils.shufflecycle(values)
             seen = set()
-            for i in range(10):
+            for _ in range(10):
                 next(cycle)
             utils.repeat.assert_called_with(None)
             assert seen.issubset(values)

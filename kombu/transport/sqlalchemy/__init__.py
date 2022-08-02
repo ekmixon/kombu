@@ -166,15 +166,16 @@ class Channel(virtual.Channel):
         if self.session.bind.name == 'sqlite':
             self.session.execute('BEGIN IMMEDIATE TRANSACTION')
         try:
-            msg = self.session.query(self.message_cls) \
-                .with_for_update() \
-                .filter(self.message_cls.queue_id == obj.id) \
-                .filter(self.message_cls.visible != False) \
-                .order_by(self.message_cls.sent_at) \
-                .order_by(self.message_cls.id) \
-                .limit(1) \
+            if (
+                msg := self.session.query(self.message_cls)
+                .with_for_update()
+                .filter(self.message_cls.queue_id == obj.id)
+                .filter(self.message_cls.visible != False)
+                .order_by(self.message_cls.sent_at)
+                .order_by(self.message_cls.id)
+                .limit(1)
                 .first()
-            if msg:
+            ):
                 msg.visible = False
                 return loads(bytes_to_str(msg.payload))
             raise Empty()

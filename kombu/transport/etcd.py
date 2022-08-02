@@ -180,7 +180,7 @@ class Channel(virtual.Channel):
                     raise Empty()
 
                 item = result._children[-1]
-                logger.debug('Removing key {}'.format(item['key']))
+                logger.debug(f"Removing key {item['key']}")
 
                 msg_content = loads(item['value'])
                 self.client.delete(key=item['key'])

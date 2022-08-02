@@ -150,8 +150,7 @@ class Channel(virtual.Channel):
 
     def _put(self, queue, payload, **kwargs):
         """Put `message` onto `queue`."""
-        filename = '{}_{}.{}.msg'.format(int(round(monotonic() * 1000)),
-                                         uuid.uuid4(), queue)
+        filename = f'{int(round(monotonic() * 1000))}_{uuid.uuid4()}.{queue}.msg'
         filename = os.path.join(self.data_folder_out, filename)
 
         try:
@@ -167,7 +166,7 @@ class Channel(virtual.Channel):
 
     def _get(self, queue):
         """Get next message from `queue`."""
-        queue_find = '.' + queue + '.msg'
+        queue_find = f'.{queue}.msg'
         folder = os.listdir(self.data_folder_in)
         folder = sorted(folder)
         while len(folder) > 0:
@@ -191,9 +190,8 @@ class Channel(virtual.Channel):
 
             filename = os.path.join(processed_folder, filename)
             try:
-                f = open(filename, 'rb')
-                payload = f.read()
-                f.close()
+                with open(filename, 'rb') as f:
+                    payload = f.read()
                 if not self.store_processed:
                     os.remove(filename)
             except OSError:
@@ -207,7 +205,7 @@ class Channel(virtual.Channel):
     def _purge(self, queue):
         """Remove all messages from `queue`."""
         count = 0
-        queue_find = '.' + queue + '.msg'
+        queue_find = f'.{queue}.msg'
 
         folder = os.listdir(self.data_folder_in)
         while len(folder) > 0:

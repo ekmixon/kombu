@@ -221,8 +221,10 @@ class QoS:
         :rtype: int
 
         """
-        return 1 if not self.prefetch_count else (
+        return (
             self.prefetch_count - len(self._not_yet_acked)
+            if self.prefetch_count
+            else 1
         )
 
     def append(self, message, delivery_tag):
@@ -476,11 +478,11 @@ class Channel(base.StdChannel):
         """
         if not exchange:
             address = f'{routing_key}; ' \
-                      '{{assert: always, node: {{type: queue}}}}'
+                          '{{assert: always, node: {{type: queue}}}}'
             msg_subject = None
         else:
             address = f'{exchange}/{routing_key}; '\
-                      '{{assert: always, node: {{type: topic}}}}'
+                          '{{assert: always, node: {{type: topic}}}}'
             msg_subject = str(routing_key)
         sender = self.transport.session.sender(address)
         qpid_message = qpid.messaging.Message(content=message,
@@ -550,8 +552,7 @@ class Channel(base.StdChannel):
 
         """
         queue_to_check = self._broker.getQueue(queue)
-        message_depth = queue_to_check.values['msgDepth']
-        return message_depth
+        return queue_to_check.values['msgDepth']
 
     def _delete(self, queue, *args, **kwargs):
         """Delete a queue and all messages on that queue.
@@ -582,10 +583,7 @@ class Channel(base.StdChannel):
         :rtype: bool
 
         """
-        if self._broker.getQueue(queue):
-            return True
-        else:
-            return False
+        return bool(self._broker.getQueue(queue))
 
     def queue_declare(self, queue, passive=False, durable=False,
                       exclusive=False, auto_delete=True, nowait=False,
@@ -1190,9 +1188,7 @@ class Channel(base.StdChannel):
         :rtype: str
 
         """
-        if encoding:
-            return self.codecs.get(encoding).decode(body)
-        return body
+        return self.codecs.get(encoding).decode(body) if encoding else body
 
     def typeof(self, exchange, default='direct'):
         """Get the exchange type.
@@ -1213,12 +1209,10 @@ class Channel(base.StdChannel):
         :rtype: str
 
         """
-        qpid_exchange = self._broker.getExchange(exchange)
-        if qpid_exchange:
-            qpid_exchange_attributes = qpid_exchange.getAttributes()
-            return qpid_exchange_attributes['type']
-        else:
+        if not (qpid_exchange := self._broker.getExchange(exchange)):
             return default
+        qpid_exchange_attributes = qpid_exchange.getAttributes()
+        return qpid_exchange_attributes['type']
 
 
 class Connection:
@@ -1321,15 +1315,15 @@ class Connection:
             # just continue on to the next mech.
             coded_as_auth_failure = getattr(conn_exc, 'code', None) == 320
             contains_auth_fail_text = \
-                'Authentication failed' in conn_exc.text
+                    'Authentication failed' in conn_exc.text
             contains_mech_fail_text = \
-                'sasl negotiation failed: no mechanism agreed' \
-                in conn_exc.text
+                    'sasl negotiation failed: no mechanism agreed' \
+                    in conn_exc.text
             contains_mech_unavail_text = 'no mechanism available' \
-                in conn_exc.text
+                    in conn_exc.text
             if coded_as_auth_failure or \
-                    contains_auth_fail_text or contains_mech_fail_text or \
-                    contains_mech_unavail_text:
+                        contains_auth_fail_text or contains_mech_fail_text or \
+                        contains_mech_unavail_text:
                 msg = _('Unable to connect to qpid with SASL '
                         'mechanism %s') % sasl_mech
                 logger.error(msg)
@@ -1604,10 +1598,10 @@ class Transport(base.Transport):
                 'certfile']
             conninfo.transport_options['ssl_trustfile'] = conninfo.ssl[
                 'ca_certs']
-            if conninfo.ssl['cert_reqs'] == ssl.CERT_REQUIRED:
-                conninfo.transport_options['ssl_skip_hostname_check'] = False
-            else:
-                conninfo.transport_options['ssl_skip_hostname_check'] = True
+            conninfo.transport_options['ssl_skip_hostname_check'] = (
+                conninfo.ssl['cert_reqs'] != ssl.CERT_REQUIRED
+            )
+
         else:
             conninfo.qpid_transport = 'tcp'
 
@@ -1621,7 +1615,7 @@ class Transport(base.Transport):
                 raise Exception(
                     'Password configured but no username. SASL PLAIN '
                     'requires a username when using a password.')
-            elif conninfo.userid is not None and conninfo.password is None:
+            elif conninfo.userid is not None:
                 raise Exception(
                     'Username configured but no password. SASL PLAIN '
                     'requires a password when using a username.')
@@ -1637,11 +1631,10 @@ class Transport(base.Transport):
             'port': conninfo.port,
             'sasl_mechanisms': sasl_mech,
             'timeout': conninfo.connect_timeout,
-            'transport': conninfo.qpid_transport
-        }
+            'transport': conninfo.qpid_transport,
+        } | credentials
 
-        opts.update(credentials)
-        opts.update(conninfo.transport_options)
+        opts |= conninfo.transport_options
 
         conn = self.Connection(**opts)
         conn.client = self.client

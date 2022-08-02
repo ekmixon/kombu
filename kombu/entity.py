@@ -18,19 +18,17 @@ INTERNAL_EXCHANGE_PREFIX = ('amq.',)
 
 def _reprstr(s):
     s = repr(s)
-    if isinstance(s, str) and s.startswith("u'"):
-        return s[2:-1]
-    return s[1:-1]
+    return s[2:-1] if isinstance(s, str) and s.startswith("u'") else s[1:-1]
 
 
 def pretty_bindings(bindings):
-    return '[{}]'.format(', '.join(map(str, bindings)))
+    return f"[{', '.join(map(str, bindings))}]"
 
 
 def maybe_delivery_mode(
         v, modes=None, default=PERSISTENT_DELIVERY_MODE):
     """Get delivery mode by name (or none if undefined)."""
-    modes = DELIVERY_MODES if not modes else modes
+    modes = modes or DELIVERY_MODES
     if v:
         return v if isinstance(v, numbers.Integral) else modes[v]
     return default
@@ -307,9 +305,7 @@ class Exchange(MaybeChannelBound):
         return self._repr_entity(self)
 
     def __str__(self):
-        return 'Exchange {}({})'.format(
-            _reprstr(self.name) or repr(''), self.type,
-        )
+        return f"Exchange {_reprstr(self.name) or repr('')}({self.type})"
 
     @property
     def can_cache_declaration(self):
@@ -365,9 +361,7 @@ class binding(Object):
         return f'<binding: {self}>'
 
     def __str__(self):
-        return '{}->{}'.format(
-            _reprstr(self.exchange.name), _reprstr(self.routing_key),
-        )
+        return f'{_reprstr(self.exchange.name)}->{_reprstr(self.routing_key)}'
 
 
 class Queue(MaybeChannelBound):
@@ -694,8 +688,7 @@ class Queue(MaybeChannelBound):
         no_ack = self.no_ack if no_ack is None else no_ack
         message = self.channel.basic_get(queue=self.name, no_ack=no_ack)
         if message is not None:
-            m2p = getattr(self.channel, 'message_to_python', None)
-            if m2p:
+            if m2p := getattr(self.channel, 'message_to_python', None):
                 message = m2p(message)
             if message.errors:
                 message._reraise_error()
@@ -860,7 +853,6 @@ class Queue(MaybeChannelBound):
         res = super().as_dict(recurse)
         if not recurse:
             return res
-        bindings = res.get('bindings')
-        if bindings:
+        if bindings := res.get('bindings'):
             res['bindings'] = [b.as_dict(recurse=True) for b in bindings]
         return res

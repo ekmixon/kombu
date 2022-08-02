@@ -270,8 +270,7 @@ class test_AsyncAWSQueryConnection(AWSCase):
     @contextmanager
     def mock_make_request(self):
         self.x.make_request = Mock(name='make_request')
-        callback = PromiseMock(name='callback')
-        yield callback
+        yield PromiseMock(name='callback')
 
     def assert_make_request_called(self):
         self.x.make_request.assert_called()

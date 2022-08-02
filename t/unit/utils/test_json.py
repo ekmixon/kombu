@@ -34,7 +34,7 @@ class test_JSONEncoder:
         ))
         assert serialized == {
             'datetime': now.isoformat(),
-            'tz': '{}Z'.format(now_utc.isoformat().split('+', 1)[0]),
+            'tz': f"{now_utc.isoformat().split('+', 1)[0]}Z",
             'time': now.time().isoformat(),
             'date': stripped.isoformat(),
         }

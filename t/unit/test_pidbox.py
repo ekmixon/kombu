@@ -336,8 +336,7 @@ class test_Mailbox:
         assert is_call(self.get_next(consumer))
 
     def get_next(self, consumer):
-        m = consumer.queues[0].get()
-        if m:
+        if m := consumer.queues[0].get():
             return m.payload
 
 

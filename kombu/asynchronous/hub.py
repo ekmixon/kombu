@@ -135,7 +135,7 @@ class Hub:
         timer = self.timer
         delay = None
         if timer and timer._queue:
-            for i in range(max_timers):
+            for _ in range(max_timers):
                 delay, entry = next(self.scheduler)
                 if entry is None:
                     break
@@ -311,7 +311,7 @@ class Hub:
                 for fd, event in events or ():
                     general_error = False
                     if fd in consolidate and \
-                            writers.get(fd) is None:
+                                writers.get(fd) is None:
                         to_consolidate.append(fd)
                         continue
                     cb = cbargs = None

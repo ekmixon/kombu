@@ -40,16 +40,12 @@ else:
 
 def str_to_bytes(s):
     """Convert str to bytes."""
-    if isinstance(s, str):
-        return s.encode()
-    return s
+    return s.encode() if isinstance(s, str) else s
 
 
 def bytes_to_str(s):
     """Convert bytes to str."""
-    if isinstance(s, bytes):
-        return s.decode(errors='replace')
-    return s
+    return s.decode(errors='replace') if isinstance(s, bytes) else s
 
 
 def from_utf8(s, *args, **kwargs):
@@ -59,9 +55,7 @@ def from_utf8(s, *args, **kwargs):
 
 def ensure_bytes(s):
     """Ensure s is bytes, not str."""
-    if not isinstance(s, bytes):
-        return str_to_bytes(s)
-    return s
+    return s if isinstance(s, bytes) else str_to_bytes(s)
 
 
 def default_encode(obj):
@@ -72,9 +66,11 @@ def default_encode(obj):
 def safe_str(s, errors='replace'):
     """Safe form of str(), void of unicode errors."""
     s = bytes_to_str(s)
-    if not isinstance(s, (str, bytes)):
-        return safe_repr(s, errors)
-    return _safe_str(s, errors)
+    return (
+        _safe_str(s, errors)
+        if isinstance(s, (str, bytes))
+        else safe_repr(s, errors)
+    )
 
 
 def _safe_str(s, errors='replace', file=None):

@@ -52,23 +52,20 @@ def resolve_transport(transport=None):
             an actual transport class, or the fully qualified
             path to a transport class, or the alias of a transport.
     """
-    if isinstance(transport, str):
-        try:
-            transport = TRANSPORT_ALIASES[transport]
-        except KeyError:
-            if '.' not in transport and ':' not in transport:
-                from kombu.utils.text import fmatch_best
-                alt = fmatch_best(transport, TRANSPORT_ALIASES)
-                if alt:
-                    raise KeyError(
-                        'No such transport: {}.  Did you mean {}?'.format(
-                            transport, alt))
-                raise KeyError(f'No such transport: {transport}')
-        else:
-            if callable(transport):
-                transport = transport()
-        return symbol_by_name(transport)
-    return transport
+    if not isinstance(transport, str):
+        return transport
+    try:
+        transport = TRANSPORT_ALIASES[transport]
+    except KeyError:
+        if '.' not in transport and ':' not in transport:
+            from kombu.utils.text import fmatch_best
+            if alt := fmatch_best(transport, TRANSPORT_ALIASES):
+                raise KeyError(f'No such transport: {transport}.  Did you mean {alt}?')
+            raise KeyError(f'No such transport: {transport}')
+    else:
+        if callable(transport):
+            transport = transport()
+    return symbol_by_name(transport)
 
 
 def get_transport_cls(transport=None):

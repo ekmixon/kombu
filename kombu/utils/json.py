@@ -43,19 +43,18 @@ class JSONEncoder(_encoder_cls):
         reducer = getattr(o, '__json__', None)
         if reducer is not None:
             return reducer()
-        else:
-            if isinstance(o, dates):
-                if not isinstance(o, datetime):
-                    o = datetime(o.year, o.month, o.day, 0, 0, 0, 0)
-                r = o.isoformat()
-                if r.endswith("+00:00"):
-                    r = r[:-6] + "Z"
-                return r
-            elif isinstance(o, times):
-                return o.isoformat()
-            elif isinstance(o, textual):
-                return text_t(o)
-            return super().default(o)
+        if isinstance(o, dates):
+            if not isinstance(o, datetime):
+                o = datetime(o.year, o.month, o.day, 0, 0, 0, 0)
+            r = o.isoformat()
+            if r.endswith("+00:00"):
+                r = f"{r[:-6]}Z"
+            return r
+        elif isinstance(o, times):
+            return o.isoformat()
+        elif isinstance(o, textual):
+            return text_t(o)
+        return super().default(o)
 
 
 _default_encoder = JSONEncoder
@@ -79,11 +78,8 @@ def loads(s, _loads=json.loads, decode_bytes=True):
     # </rant>
     if isinstance(s, memoryview):
         s = s.tobytes().decode('utf-8')
-    elif isinstance(s, bytearray):
+    elif isinstance(s, bytearray) or decode_bytes and isinstance(s, bytes):
         s = s.decode('utf-8')
-    elif decode_bytes and isinstance(s, bytes):
-        s = s.decode('utf-8')
-
     try:
         return _loads(s)
     except _DecodeError:

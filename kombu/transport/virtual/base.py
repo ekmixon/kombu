@@ -206,8 +206,7 @@ class QoS:
         Returns:
             int: greater than zero.
         """
-        pcount = self.prefetch_count
-        if pcount:
+        if pcount := self.prefetch_count:
             return max(pcount - (len(self._delivered) - len(self._dirty)), 0)
 
     def append(self, message, delivery_tag):
@@ -282,9 +281,7 @@ class QoS:
             if state:
                 print(RESTORING_FMT.format(len(self._delivered)),
                       file=stderr)
-                unrestored = self.restore_unacked()
-
-                if unrestored:
+                if unrestored := self.restore_unacked():
                     errors, messages = list(zip(*unrestored))
                     print(RESTORE_PANIC_FMT.format(len(errors), errors),
                           file=stderr)
@@ -466,10 +463,10 @@ class Channel(AbstractChannel, base.StdChannel):
             self.channel_id = self.connection._avail_channel_ids.pop()
         except IndexError:
             raise ResourceError(
-                'No free channel ids, current={}, channel_max={}'.format(
-                    len(self.connection.channels),
-                    self.connection.channel_max), (20, 10),
+                f'No free channel ids, current={len(self.connection.channels)}, channel_max={self.connection.channel_max}',
+                (20, 10),
             )
+
 
         topts = self.connection.client.transport_options
         for opt_name in self.from_transport_options:
@@ -483,7 +480,7 @@ class Channel(AbstractChannel, base.StdChannel):
                          nowait=False, passive=False):
         """Declare exchange."""
         type = type or 'direct'
-        exchange = exchange or 'amq.%s' % type
+        exchange = exchange or f'amq.{type}'
         if passive:
             if exchange not in self.state.exchanges:
                 raise ChannelError(
@@ -516,7 +513,7 @@ class Channel(AbstractChannel, base.StdChannel):
 
     def queue_declare(self, queue=None, passive=False, **kwargs):
         """Declare queue."""
-        queue = queue or 'amq.gen-%s' % uuid()
+        queue = queue or f'amq.gen-{uuid()}'
         if passive and not self._has_queue(queue, **kwargs):
             raise ChannelError(
                 'NOT_FOUND - no queue {!r} in vhost {!r}'.format(
@@ -743,9 +740,11 @@ class Channel(AbstractChannel, base.StdChannel):
 
     def message_to_python(self, raw_message):
         """Convert raw message to :class:`Message` instance."""
-        if not isinstance(raw_message, self.Message):
-            return self.Message(payload=raw_message, channel=self)
-        return raw_message
+        return (
+            raw_message
+            if isinstance(raw_message, self.Message)
+            else self.Message(payload=raw_message, channel=self)
+        )
 
     def prepare_message(self, body, priority=None, content_type=None,
                         content_encoding=None, headers=None, properties=None):
@@ -793,9 +792,7 @@ class Channel(AbstractChannel, base.StdChannel):
         return body, encoding
 
     def decode_body(self, body, encoding=None):
-        if encoding:
-            return self.codecs.get(encoding).decode(body)
-        return body
+        return self.codecs.get(encoding).decode(body) if encoding else body
 
     def _reset_cycle(self):
         self._cycle = FairCycle(
@@ -966,9 +963,7 @@ class Transport(base.Transport):
 
     def _deliver(self, message, queue):
         if not queue:
-            raise KeyError(
-                'Received message without destination queue: {}'.format(
-                    message))
+            raise KeyError(f'Received message without destination queue: {message}')
         try:
             callback = self._callbacks[queue]
         except KeyError:

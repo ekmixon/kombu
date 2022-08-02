@@ -38,9 +38,7 @@ class timetuple(tuple):
             A, B = self[0], other[0]
             # uses logical clock value first
             if A and B:  # use logical clock if available
-                if A == B:  # equal clocks use lower process id
-                    return self[2] < other[2]
-                return A < B
+                return self[2] < other[2] if A == B else A < B
             return self[1] < other[1]  # ... or use timestamp
         except IndexError:
             return NotImplemented

@@ -61,7 +61,7 @@ class Message:
                  content_type=None, content_encoding=None, delivery_info=None,
                  properties=None, headers=None, postencode=None,
                  accept=None, channel=None, **kwargs):
-        delivery_info = {} if not delivery_info else delivery_info
+        delivery_info = delivery_info or {}
         self.errors = [] if self.errors is None else self.errors
         self.channel = channel
         self.delivery_tag = delivery_tag
@@ -206,7 +206,7 @@ class Message:
     @property
     def payload(self):
         """The decoded message body."""
-        return self._decoded_cache if self._decoded_cache else self.decode()
+        return self._decoded_cache or self.decode()
 
     def __repr__(self):
         return '<{} object at {:#x} with details {!r}>'.format(

@@ -210,9 +210,7 @@ class lazy:
 
 def maybe_evaluate(value):
     """Evaluate value only if value is a :class:`lazy` instance."""
-    if isinstance(value, lazy):
-        return value.evaluate()
-    return value
+    return value.evaluate() if isinstance(value, lazy) else value
 
 
 def is_list(obj, scalars=(Mapping, str), iters=(Iterable,)):
@@ -249,17 +247,15 @@ def fxrange(start=1.0, stop=None, step=1.0, repeatlast=False):
         if not stop or cur <= stop:
             yield cur
             cur += step
-        else:
-            if not repeatlast:
-                break
+        elif repeatlast:
             yield cur - step
+        else:
+            break
 
 
 def fxrangemax(start=1.0, stop=None, step=1.0, max=100.0):
     sum_, cur = 0, start * 1.0
-    while 1:
-        if sum_ >= max:
-            break
+    while 1 and sum_ < max:
         yield cur
         if stop:
             cur = min(cur + step, stop)
@@ -301,8 +297,8 @@ def retry_over_time(fun, catch, args=None, kwargs=None, errback=None,
             between retries.
         timeout (int): Maximum seconds waiting before we give up.
     """
-    kwargs = {} if not kwargs else kwargs
-    args = [] if not args else args
+    kwargs = kwargs or {}
+    args = args or []
     interval_range = fxrange(interval_start,
                              interval_max + interval_start,
                              interval_step, repeatlast=True)
@@ -333,12 +329,8 @@ def reprkwargs(kwargs, sep=', ', fmt='{0}={1}'):
 
 
 def reprcall(name, args=(), kwargs=None, sep=', '):
-    kwargs = {} if not kwargs else kwargs
-    return '{}({}{}{})'.format(
-        name, sep.join(map(_safe_repr, args or ())),
-        (args and kwargs) and sep or '',
-        reprkwargs(kwargs, sep),
-    )
+    kwargs = kwargs or {}
+    return f"{name}({sep.join(map(_safe_repr, args or ()))}{(args and kwargs) and sep or ''}{reprkwargs(kwargs, sep)})"
 
 
 def accepts_argument(func, argument_name):

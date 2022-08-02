@@ -57,11 +57,7 @@ class _poll(eventio._select):
             self._rfd.add(fd)
 
     def poll(self, timeout):
-        events = []
-        for fd in self._rfd:
-            if fd.data:
-                events.append((fd.fileno(), eventio.READ))
-        return events
+        return [(fd.fileno(), eventio.READ) for fd in self._rfd if fd.data]
 
 
 eventio.poll = _poll
@@ -147,8 +143,7 @@ class Client:
         self.connection._sock.data = []
         if type == 'BRPOP':
             timeout = queues.pop()
-            item = self.brpop(queues, timeout)
-            if item:
+            if item := self.brpop(queues, timeout):
                 return item
             raise Empty()
 
@@ -300,7 +295,7 @@ class test_Channel:
 
     def test_delivery_tag_is_uuid(self):
         seen = set()
-        for i in range(100):
+        for _ in range(100):
             tag = self._get_one_delivery_tag()
             assert tag not in seen
             seen.add(tag)

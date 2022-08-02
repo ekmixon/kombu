@@ -10,10 +10,7 @@ class MyEmpty(Exception):
 
 
 def consume(fun, n):
-    r = []
-    for i in range(n):
-        r.append(fun(Mock(name='callback')))
-    return r
+    return [fun(Mock(name='callback')) for _ in range(n)]
 
 
 class test_FairCycle:

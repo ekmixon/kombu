@@ -167,10 +167,13 @@ class Producer:
             body, serializer, content_type, content_encoding,
             compression, headers)
 
-        if self.auto_declare and self.exchange.name:
-            if self.exchange not in declare:
-                # XXX declare should be a Set.
-                declare.append(self.exchange)
+        if (
+            self.auto_declare
+            and self.exchange.name
+            and self.exchange not in declare
+        ):
+            # XXX declare should be a Set.
+            declare.append(self.exchange)
 
         if retry:
             _publish = self.connection.ensure(self, _publish, **retry_policy)
@@ -225,13 +228,13 @@ class Producer:
             channel = ChannelPromise(lambda: connection.default_channel)
         if isinstance(channel, ChannelPromise):
             self._channel = channel
-            self.exchange = self.exchange(channel)
         else:
             # Channel already concrete
             self._channel = channel
             if self.on_return:
                 self._channel.events['basic_return'].add(self.on_return)
-            self.exchange = self.exchange(channel)
+
+        self.exchange = self.exchange(channel)
 
     def __enter__(self):
         return self
@@ -252,18 +255,13 @@ class Producer:
             serializer = serializer or self.serializer
             (content_type, content_encoding,
              body) = dumps(body, serializer=serializer)
-        else:
-            # If the programmer doesn't want us to serialize,
-            # make sure content_encoding is set.
-            if isinstance(body, str):
-                if not content_encoding:
-                    content_encoding = 'utf-8'
-                body = body.encode(content_encoding)
+        elif isinstance(body, str):
+            if not content_encoding:
+                content_encoding = 'utf-8'
+            body = body.encode(content_encoding)
 
-            # If they passed in a string, we can't know anything
-            # about it. So assume it's binary data.
-            elif not content_encoding:
-                content_encoding = 'binary'
+        elif not content_encoding:
+            content_encoding = 'binary'
 
         if compression:
             body, headers['compression'] = compress(body, compression)
@@ -468,8 +466,7 @@ class Consumer:
         Arguments:
             no_ack (bool): See :attr:`no_ack`.
         """
-        queues = list(self._queues.values())
-        if queues:
+        if queues := list(self._queues.values()):
             no_ack = self.no_ack if no_ack is None else no_ack
 
             H, T = queues[:-1], queues[-1]
@@ -586,10 +583,10 @@ class Consumer:
             NotImplementedError: If no consumer callbacks have been
                 registered.
         """
-        callbacks = self.callbacks
-        if not callbacks:
+        if callbacks := self.callbacks:
+            [callback(body, message) for callback in callbacks]
+        else:
             raise NotImplementedError('Consumer does not have any callbacks')
-        [callback(body, message) for callback in callbacks]
 
     def _basic_consume(self, queue, consumer_tag=None,
                        no_ack=no_ack, nowait=True):
@@ -601,8 +598,7 @@ class Consumer:
         return tag
 
     def _add_tag(self, queue, consumer_tag=None):
-        tag = consumer_tag or '{}{}'.format(
-            self.tag_prefix, next(self._tags))
+        tag = consumer_tag or f'{self.tag_prefix}{next(self._tags)}'
         self._active_tags[queue.name] = tag
         return tag
 
@@ -610,8 +606,7 @@ class Consumer:
         accept = self.accept
         on_m, channel, decoded = self.on_message, self.channel, None
         try:
-            m2p = getattr(channel, 'message_to_python', None)
-            if m2p:
+            if m2p := getattr(channel, 'message_to_python', None):
                 message = m2p(message)
             if accept is not None:
                 message.accept = accept

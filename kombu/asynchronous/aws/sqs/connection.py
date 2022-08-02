@@ -63,10 +63,12 @@ class AsyncSQSConnection(AsyncAWSQueryConnection):
         if visibility_timeout:
             params['VisibilityTimeout'] = visibility_timeout
         if attributes:
-            attrs = {}
-            for idx, attr in enumerate(attributes):
-                attrs['AttributeName.' + str(idx + 1)] = attr
-            params.update(attrs)
+            attrs = {
+                f'AttributeName.{str(idx + 1)}': attr
+                for idx, attr in enumerate(attributes)
+            }
+
+            params |= attrs
         if wait_time_seconds is not None:
             params['WaitTimeSeconds'] = wait_time_seconds
         return self.get_list(
@@ -83,10 +85,11 @@ class AsyncSQSConnection(AsyncAWSQueryConnection):
         params = {}
         for i, m in enumerate(messages):
             prefix = f'DeleteMessageBatchRequestEntry.{i + 1}'
-            params.update({
+            params |= {
                 f'{prefix}.Id': m.id,
                 f'{prefix}.ReceiptHandle': m.receipt_handle,
-            })
+            }
+
         return self.get_object(
             'DeleteMessageBatch', params, queue.id,
             verb='POST', callback=callback,
@@ -113,11 +116,12 @@ class AsyncSQSConnection(AsyncAWSQueryConnection):
         params = {}
         for i, msg in enumerate(messages):
             prefix = f'SendMessageBatchRequestEntry.{i + 1}'
-            params.update({
+            params |= {
                 f'{prefix}.Id': msg[0],
                 f'{prefix}.MessageBody': msg[1],
                 f'{prefix}.DelaySeconds': msg[2],
-            })
+            }
+
         return self.get_object(
             'SendMessageBatch', params, queue.id,
             verb='POST', callback=callback,
@@ -136,11 +140,12 @@ class AsyncSQSConnection(AsyncAWSQueryConnection):
         params = {}
         for i, t in enumerate(messages):
             pre = f'ChangeMessageVisibilityBatchRequestEntry.{i + 1}'
-            params.update({
+            params |= {
                 f'{pre}.Id': t[0].id,
                 f'{pre}.ReceiptHandle': t[0].receipt_handle,
                 f'{pre}.VisibilityTimeout': t[1],
-            })
+            }
+
         return self.get_object(
             'ChangeMessageVisibilityBatch', params, queue.id,
             verb='POST', callback=callback,

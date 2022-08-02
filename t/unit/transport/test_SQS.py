@@ -86,9 +86,9 @@ class SQSClientMock:
 
     def create_queue(self, QueueName=None, Attributes=None):
         q = self._queues[QueueName] = QueueMock(
-            'https://sqs.us-east-1.amazonaws.com/xxx/' + QueueName,
-            Attributes,
+            f'https://sqs.us-east-1.amazonaws.com/xxx/{QueueName}', Attributes
         )
+
         return {'QueueUrl': q.url}
 
     def list_queues(self, QueueNamePrefix=None):
@@ -103,8 +103,7 @@ class SQSClientMock:
     def send_message(self, QueueUrl=None, MessageBody=None):
         for q in self._queues.values():
             if q.url == QueueUrl:
-                handle = ''.join(random.choice(string.ascii_lowercase) for
-                                 x in range(10))
+                handle = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
                 q.messages.append({'Body': MessageBody,
                                    'ReceiptHandle': handle})
                 break
@@ -169,7 +168,7 @@ class test_Channel:
 
         # Mock up a test SQS Queue with the QueueMock class (and always
         # make sure its a clean empty queue)
-        self.sqs_queue_mock = QueueMock('sqs://' + self.queue_name)
+        self.sqs_queue_mock = QueueMock(f'sqs://{self.queue_name}')
 
         # Now, create our Connection object with the SQS Transport and store
         # the connection/channel objects as references for use in these tests.
@@ -345,11 +344,11 @@ class test_Channel:
         json_message_count = 3
         # Create several test messages and publish them
         for i in range(kombu_message_count):
-            message = 'message: %s' % i
+            message = f'message: {i}'
             self.producer.publish(message)
 
         # json formatted message NOT created by kombu
-        for i in range(json_message_count):
+        for _ in range(json_message_count):
             message = {'foo': 'bar'}
             self.channel._put(self.producer.routing_key, message)
 
@@ -419,7 +418,7 @@ class test_Channel:
 
         # Now, generate all the messages
         for i in range(message_count):
-            message = 'message: %s' % i
+            message = f'message: {i}'
             self.producer.publish(message)
 
         # Count how many messages are retrieved the first time. Should
@@ -456,11 +455,12 @@ class test_Channel:
         def on_message_delivered(message, queue):
             current_delivery_tag[0] += 1
             self.channel.qos.append(message, current_delivery_tag[0])
+
         self.channel.connection._deliver.side_effect = on_message_delivered
 
         # Now, generate all the messages
         for i in range(message_count):
-            self.producer.publish('message: %s' % i)
+            self.producer.publish(f'message: {i}')
 
         # Now drain all the events
         for i in range(1000):
@@ -490,11 +490,12 @@ class test_Channel:
         def on_message_delivered(message, queue):
             current_delivery_tag[0] += 1
             self.channel.qos.append(message, current_delivery_tag[0])
+
         self.channel.connection._deliver.side_effect = on_message_delivered
 
         # Now, generate all the messages
         for i in range(message_count):
-            self.producer.publish('message: %s' % i)
+            self.producer.publish(f'message: {i}')
 
         # Now drain all the events
         for i in range(1000):

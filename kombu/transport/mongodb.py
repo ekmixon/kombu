@@ -282,11 +282,11 @@ class Channel(virtual.Channel):
 
             credentials = client.userid
             if client.password:
-                credentials += ':' + client.password
+                credentials += f':{client.password}'
 
-            hostname = head + '://' + credentials + '@' + tail
+            hostname = f'{head}://{credentials}@{tail}'
 
-        port = client.port if client.port else self.default_port
+        port = client.port or self.default_port
 
         parsed = uri_parser.parse_uri(hostname, port)
 
@@ -301,7 +301,7 @@ class Channel(virtual.Channel):
             'connectTimeoutMS': (int(self.connect_timeout * 1000)
                                  if self.connect_timeout else None),
         }
-        options.update(parsed['options'])
+        options |= parsed['options']
         options = self._prepare_client_options(options)
 
         return hostname, dbname, options
@@ -434,12 +434,11 @@ class Channel(virtual.Channel):
             `queue` must be either queue name or options itself.
         """
         if isinstance(queue, str):
-            doc = self.queues.find_one({'_id': queue})
-
-            if not doc:
+            if doc := self.queues.find_one({'_id': queue}):
+                data = doc['options']
+            else:
                 return
 
-            data = doc['options']
         else:
             data = queue
 

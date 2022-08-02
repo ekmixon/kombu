@@ -96,8 +96,8 @@ class MaybeChannelBound(Object):
     def _repr_entity(self, item=''):
         item = item or type(self).__name__
         if self.is_bound:
-            return '<{} bound to chan:{}>'.format(
-                item or type(self).__name__, self.channel.channel_id)
+            return f'<{item or type(self).__name__} bound to chan:{self.channel.channel_id}>'
+
         return f'<unbound {item}>'
 
     @property
@@ -111,8 +111,9 @@ class MaybeChannelBound(Object):
         channel = self._channel
         if channel is None:
             raise NotBoundError(
-                "Can't call method on {} not bound to a channel".format(
-                    type(self).__name__))
+                f"Can't call method on {type(self).__name__} not bound to a channel"
+            )
+
         if isinstance(channel, ChannelPromise):
             channel = self._channel = channel()
         return channel

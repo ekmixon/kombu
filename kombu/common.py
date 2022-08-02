@@ -85,7 +85,7 @@ class Broadcast(Queue):
                  alias=None,
                  **kwargs):
         if unique:
-            queue = '{}.{}'.format(queue or 'bcast', uuid())
+            queue = f"{queue or 'bcast'}.{uuid()}"
         else:
             queue = queue or f'bcast.{uuid()}'
         super().__init__(
@@ -221,7 +221,7 @@ def eventloop(conn, limit=None, timeout=None, ignore_timeouts=False):
         :func:`itermessages`, which is an event loop bound to one or more
         consumers, that yields any messages received.
     """
-    for i in limit and range(limit) or count():
+    for _ in limit and range(limit) or count():
         try:
             yield conn.drain_events(timeout=timeout)
         except socket.timeout:
@@ -412,8 +412,7 @@ class QoS:
         with self._mutex:
             if self.value:
                 self.value -= n
-                if self.value < 1:
-                    self.value = 1
+                self.value = max(self.value, 1)
         return self.value
 
     def set(self, pcount):

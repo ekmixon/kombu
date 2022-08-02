@@ -31,9 +31,7 @@ class EqualityDict(dict):
 
     def __getitem__(self, key):
         h = eqhash(key)
-        if h not in self:
-            return self.__missing__(key)
-        return super().__getitem__(h)
+        return self.__missing__(key) if h not in self else super().__getitem__(h)
 
     def __setitem__(self, key, value):
         return super().__setitem__(eqhash(key), value)

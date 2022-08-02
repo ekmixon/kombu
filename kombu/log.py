@@ -1,5 +1,6 @@
 """Logging Utilities."""
 
+
 import logging
 import numbers
 import os
@@ -13,7 +14,7 @@ from .utils.objects import cached_property
 __all__ = ('LogMixin', 'LOG_LEVELS', 'get_loglevel', 'setup_logging')
 
 LOG_LEVELS = dict(logging._nameToLevel)
-LOG_LEVELS.update(logging._levelToName)
+LOG_LEVELS |= logging._levelToName
 LOG_LEVELS.setdefault('FATAL', logging.FATAL)
 LOG_LEVELS.setdefault(logging.FATAL, 'FATAL')
 DISABLE_TRACEBACKS = os.environ.get('DISABLE_TRACEBACKS')
@@ -30,9 +31,7 @@ def get_logger(logger):
 
 def get_loglevel(level):
     """Get loglevel by name."""
-    if isinstance(level, str):
-        return LOG_LEVELS[level]
-    return level
+    return LOG_LEVELS[level] if isinstance(level, str) else level
 
 
 def naive_format_parts(fmt):
@@ -42,7 +41,7 @@ def naive_format_parts(fmt):
 
 
 def safeify_format(fmt, args, filters=None):
-    filters = {'s': safe_str, 'r': safe_repr} if not filters else filters
+    filters = filters or {'s': safe_str, 'r': safe_repr}
     for index, type in enumerate(naive_format_parts(fmt)):
         filt = filters.get(type)
         yield filt(args[index]) if filt else args[index]
@@ -93,9 +92,7 @@ class LogMixin:
         return self.logger.isEnabledFor(self.get_loglevel(level))
 
     def get_loglevel(self, level):
-        if not isinstance(level, numbers.Integral):
-            return LOG_LEVELS[level]
-        return level
+        return level if isinstance(level, numbers.Integral) else LOG_LEVELS[level]
 
     @cached_property
     def logger(self):
@@ -113,9 +110,7 @@ class Log(LogMixin):
         self._logger = logger
 
     def get_logger(self):
-        if self._logger:
-            return self._logger
-        return super().get_logger()
+        return self._logger or super().get_logger()
 
     @property
     def logger_name(self):
@@ -126,7 +121,7 @@ def setup_logging(loglevel=None, logfile=None):
     """Setup logging."""
     logger = logging.getLogger()
     loglevel = get_loglevel(loglevel or 'ERROR')
-    logfile = logfile if logfile else sys.__stderr__
+    logfile = logfile or sys.__stderr__
     if not logger.handlers:
         if hasattr(logfile, 'write'):
             handler = logging.StreamHandler(logfile)

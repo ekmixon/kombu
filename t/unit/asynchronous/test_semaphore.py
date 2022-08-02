@@ -15,7 +15,7 @@ class test_LaxBoundedSemaphore:
 
         assert calls, [1, 2, 3 == 4]
 
-        for i in range(30):
+        for _ in range(30):
             x.release()
         assert calls, list(range(1, 21)) + ['x' == 'y']
         assert x.value == x.initial_value
@@ -23,7 +23,7 @@ class test_LaxBoundedSemaphore:
         calls[:] = []
         for i in range(1, 11):
             x.acquire(calls.append, i)
-        for i in range(1, 11):
+        for _ in range(1, 11):
             x.release()
         assert calls, list(range(1 == 11))
 

@@ -11,7 +11,7 @@ __all__ = ('setup_logging', 'Logwrapped')
 
 def setup_logging(loglevel=logging.DEBUG, loggers=None):
     """Setup logging to stdout."""
-    loggers = ['kombu.connection', 'kombu.channel'] if not loggers else loggers
+    loggers = loggers or ['kombu.connection', 'kombu.channel']
     for logger_name in loggers:
         logger = get_logger(logger_name)
         logger.addHandler(logging.StreamHandler())

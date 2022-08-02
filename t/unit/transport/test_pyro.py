@@ -42,9 +42,7 @@ class test_PyroTransport:
         consumer.register_callback(callback)
         consumer.consume()
 
-        while 1:
-            if len(_received) == 10:
-                break
+        while 1 and len(_received) != 10:
             self.c.drain_events()
 
         assert len(_received) == 10

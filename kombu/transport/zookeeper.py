@@ -103,7 +103,7 @@ class Channel(virtual.Channel):
     def __init__(self, connection, **kwargs):
         super().__init__(connection, **kwargs)
         vhost = self.connection.client.virtual_host
-        self._vhost = '/{}'.format(vhost.strip('/'))
+        self._vhost = f"/{vhost.strip('/')}"
 
     def _get_path(self, queue_name):
         return os.path.join(self._vhost, queue_name)

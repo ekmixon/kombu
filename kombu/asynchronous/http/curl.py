@@ -46,7 +46,7 @@ class CurlClient(BaseClient):
         self._multi = pycurl.CurlMulti()
         self._multi.setopt(pycurl.M_TIMERFUNCTION, self._set_timeout)
         self._multi.setopt(pycurl.M_SOCKETFUNCTION, self._handle_socket)
-        self._curls = [self.Curl() for i in range(max_clients)]
+        self._curls = [self.Curl() for _ in range(max_clients)]
         self._free_list = self._curls[:]
         self._pending = deque()
         self._fds = {}
@@ -91,13 +91,12 @@ class CurlClient(BaseClient):
         if event == _pycurl.POLL_REMOVE:
             if fd in self._fds:
                 self._fds.pop(fd, None)
-        else:
-            if event == _pycurl.POLL_IN:
-                self._fds[fd] = READ
-            elif event == _pycurl.POLL_OUT:
-                self._fds[fd] = WRITE
-            elif event == _pycurl.POLL_INOUT:
-                self._fds[fd] = READ | WRITE
+        elif event == _pycurl.POLL_IN:
+            self._fds[fd] = READ
+        elif event == _pycurl.POLL_OUT:
+            self._fds[fd] = WRITE
+        elif event == _pycurl.POLL_INOUT:
+            self._fds[fd] = READ | WRITE
 
     def _set_timeout(self, msecs):
         self.hub.call_later(msecs, self._timeout_check)

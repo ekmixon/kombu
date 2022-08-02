@@ -41,9 +41,7 @@ class test_MemoryTransport:
         consumer.register_callback(callback)
         consumer.consume()
 
-        while 1:
-            if len(_received) == 10:
-                break
+        while 1 and len(_received) != 10:
             self.c.drain_events()
 
         assert len(_received) == 10
@@ -92,9 +90,7 @@ class test_MemoryTransport:
         consumer1.consume()
         consumer2.consume()
 
-        while 1:
-            if len(_received1) + len(_received2) == 20:
-                break
+        while 1 and len(_received1) + len(_received2) != 20:
             self.c.drain_events()
 
         assert len(_received1) + len(_received2) == 20

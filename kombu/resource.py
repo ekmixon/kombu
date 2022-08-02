@@ -173,8 +173,9 @@ class Resource:
         if (self._dirty and 0 < limit < self._limit) and not ignore_errors:
             if not force:
                 raise RuntimeError(
-                    "Can't shrink pool when in use: was={} now={}".format(
-                        self._limit, limit))
+                    f"Can't shrink pool when in use: was={self._limit} now={limit}"
+                )
+
             reset = True
         self._limit = limit
         if reset:

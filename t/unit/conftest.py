@@ -112,9 +112,7 @@ def noop(*args, **kwargs):
 
 
 def module_name(s):
-    if isinstance(s, bytes):
-        return s.decode()
-    return s
+    return s.decode() if isinstance(s, bytes) else s
 
 
 class _patching:
@@ -281,7 +279,7 @@ def mask_modules(request):
 
     def myimp(name, *args, **kwargs):
         if name in modnames:
-            raise ImportError('No module named %s' % name)
+            raise ImportError(f'No module named {name}')
         else:
             return realimport(name, *args, **kwargs)
 

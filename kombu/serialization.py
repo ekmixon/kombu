@@ -200,7 +200,7 @@ class SerializerRegistry:
 
         if serializer:
             content_type, content_encoding, encoder = \
-                self._encoders[serializer]
+                    self._encoders[serializer]
         else:
             encoder = self._default_encode
             content_type = self._default_content_type
@@ -236,32 +236,27 @@ class SerializerRegistry:
         """
         content_type = (bytes_to_str(content_type) if content_type
                         else 'application/data')
-        if accept is not None:
-            if content_type not in _trusted_content \
-                    and content_type not in accept:
-                raise self._for_untrusted_content(content_type, 'untrusted')
-        else:
+        if accept is None:
             if content_type in self._disabled_content_types and not force:
                 raise self._for_untrusted_content(content_type, 'disabled')
+        elif content_type not in _trusted_content \
+                        and content_type not in accept:
+            raise self._for_untrusted_content(content_type, 'untrusted')
         content_encoding = (content_encoding or 'utf-8').lower()
 
         if data:
-            decode = self._decoders.get(content_type)
-            if decode:
+            if decode := self._decoders.get(content_type):
                 with _reraise_errors(DecodeError):
                     return decode(data)
             if content_encoding not in SKIP_DECODE and \
-                    not isinstance(data, str):
+                        not isinstance(data, str):
                 with _reraise_errors(DecodeError):
                     return _decode(data, content_encoding)
         return data
 
     def _for_untrusted_content(self, ctype, why):
         return ContentDisallowed(
-            'Refusing to deserialize {} content of type {}'.format(
-                why,
-                parenthesize_alias(self.type_to_name.get(ctype, ctype), ctype),
-            ),
+            f'Refusing to deserialize {why} content of type {parenthesize_alias(self.type_to_name.get(ctype, ctype), ctype)}'
         )
 
 
@@ -448,7 +443,7 @@ def prepare_accept_content(content_types, name_to_type=None):
         SerializerNotInstalled: If the serialization method
             requested is not available.
     """
-    name_to_type = registry.name_to_type if not name_to_type else name_to_type
+    name_to_type = name_to_type or registry.name_to_type
     if content_types is not None:
         try:
             return {n if '/' in n else name_to_type[n] for n in content_types}

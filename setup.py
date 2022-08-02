@@ -35,9 +35,8 @@ try:
         if line.strip() == '# -eof meta-':
             break
         for pattern, handler in pats.items():
-            m = pattern.match(line.strip())
-            if m:
-                meta.update(handler(m))
+            if m := pattern.match(line.strip()):
+                meta |= handler(m)
 finally:
     meta_fh.close()
 
@@ -51,9 +50,7 @@ def fullsplit(path, result=None):
     head, tail = os.path.split(path)
     if head == '':
         return [tail] + result
-    if head == path:
-        return result
-    return fullsplit(head, [tail] + result)
+    return result if head == path else fullsplit(head, [tail] + result)
 
 
 for scheme in list(INSTALL_SCHEMES.values()):

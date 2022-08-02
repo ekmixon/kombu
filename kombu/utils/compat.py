@@ -85,9 +85,7 @@ def entrypoints(namespace):
 
 def fileno(f):
     """Get fileno from file-like object."""
-    if isinstance(f, numbers.Integral):
-        return f
-    return f.fileno()
+    return f if isinstance(f, numbers.Integral) else f.fileno()
 
 
 def maybe_fileno(f):

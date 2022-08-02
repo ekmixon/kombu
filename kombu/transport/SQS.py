@@ -300,12 +300,11 @@ class Channel(virtual.Channel):
 
     def entity_name(self, name, table=CHARS_REPLACE_TABLE):
         """Format AMQP queue name into a legal SQS queue name."""
-        if name.endswith('.fifo'):
-            partial = name[:-len('.fifo')]
-            partial = str(safe_str(partial)).translate(table)
-            return partial + '.fifo'
-        else:
+        if not name.endswith('.fifo'):
             return str(safe_str(name)).translate(table)
+        partial = name[:-len('.fifo')]
+        partial = str(safe_str(partial)).translate(table)
+        return f'{partial}.fifo'
 
     def canonical_queue_name(self, queue_name):
         return self.entity_name(self.queue_name_prefix + queue_name)
@@ -328,10 +327,10 @@ class Channel(virtual.Channel):
             return self._queue_cache[queue]
         except KeyError:
             if self.predefined_queues:
-                raise UndefinedQueueException((
-                    "Queue with name '{}' must be "
-                    "defined in 'predefined_queues'."
-                ).format(queue))
+                raise UndefinedQueueException(
+                    f"Queue with name '{queue}' must be defined in 'predefined_queues'."
+                )
+
 
             attributes = {'VisibilityTimeout': str(self.visibility_timeout)}
             if queue.endswith('.fifo'):
@@ -372,12 +371,12 @@ class Channel(virtual.Channel):
         if queue.endswith('.fifo'):
             if 'MessageGroupId' in message['properties']:
                 kwargs['MessageGroupId'] = \
-                    message['properties']['MessageGroupId']
+                        message['properties']['MessageGroupId']
             else:
                 kwargs['MessageGroupId'] = 'default'
             if 'MessageDeduplicationId' in message['properties']:
                 kwargs['MessageDeduplicationId'] = \
-                    message['properties']['MessageDeduplicationId']
+                        message['properties']['MessageDeduplicationId']
             else:
                 kwargs['MessageDeduplicationId'] = str(uuid.uuid4())
 
@@ -428,9 +427,11 @@ class Channel(virtual.Channel):
                     'properties': properties,
                 })
             # set delivery tag to SQS receipt handle
-            delivery_info.update({
-                'sqs_message': message, 'sqs_queue': queue,
-            })
+            delivery_info |= {
+                'sqs_message': message,
+                'sqs_queue': queue,
+            }
+
             properties['delivery_tag'] = message['ReceiptHandle']
         return payload
 
@@ -473,13 +474,7 @@ class Channel(virtual.Channel):
         Returns:
             List[Message]
         """
-        # drain_events calls `can_consume` first, consuming
-        # a token, so we know that we are allowed to consume at least
-        # one message.
-
-        # Note: ignoring max_messages for SQS with boto3
-        max_count = self._get_message_estimate()
-        if max_count:
+        if max_count := self._get_message_estimate():
             q_url = self._new_queue(queue)
             resp = self.sqs(queue=queue).receive_message(
                 QueueUrl=q_url, MaxNumberOfMessages=max_count,
@@ -525,8 +520,7 @@ class Channel(virtual.Channel):
 
     def _get_bulk_async(self, queue,
                         max_if_unlimited=SQS_MAX_MESSAGES, callback=None):
-        maxcount = self._get_message_estimate()
-        if maxcount:
+        if maxcount := self._get_message_estimate():
             return self._get_async(queue, maxcount, callback=callback)
         # Not allowed to consume, make sure to notify callback..
         callback = ensure_promise(callback)
@@ -557,10 +551,10 @@ class Channel(virtual.Channel):
         connection = connection if connection is not None else queue.connection
         if self.predefined_queues:
             if queue not in self._queue_cache:
-                raise UndefinedQueueException((
-                    "Queue with name '{}' must be defined in "
-                    "'predefined_queues'."
-                ).format(queue))
+                raise UndefinedQueueException(
+                    f"Queue with name '{queue}' must be defined in 'predefined_queues'."
+                )
+
             queue_url = self._queue_cache[queue]
         else:
             queue_url = connection.get_queue_url(queue)
@@ -613,7 +607,7 @@ class Channel(virtual.Channel):
         # SQS is slow at registering messages, so run for a few
         # iterations to ensure messages are detected and deleted.
         size = 0
-        for i in range(10):
+        for _ in range(10):
             size += int(self._size(queue))
             if not size:
                 break
@@ -660,16 +654,15 @@ class Channel(virtual.Channel):
             if not self.transport_options.get('sts_role_arn'):
                 if queue in self._predefined_queue_clients:
                     return self._predefined_queue_clients[queue]
-                else:
-                    c = self._predefined_queue_clients[queue] = \
+                c = self._predefined_queue_clients[queue] = \
                         self.new_sqs_client(
-                            region=q.get('region', self.region),
-                            access_key_id=q.get(
-                                'access_key_id', self.conninfo.userid),
-                            secret_access_key=q.get(
-                                'secret_access_key', self.conninfo.password)
-                    )
-                    return c
+                        region=q.get('region', self.region),
+                        access_key_id=q.get(
+                            'access_key_id', self.conninfo.userid),
+                        secret_access_key=q.get(
+                            'secret_access_key', self.conninfo.password)
+                )
+                return c
 
         if self._sqs is not None:
             return self._sqs
@@ -722,16 +715,16 @@ class Channel(virtual.Channel):
     def asynsqs(self, queue=None):
         if queue is not None and self.predefined_queues:
             if queue in self._predefined_queue_async_clients and \
-               not hasattr(self, 'sts_expiration'):
+                   not hasattr(self, 'sts_expiration'):
                 return self._predefined_queue_async_clients[queue]
             if queue not in self.predefined_queues:
-                raise UndefinedQueueException((
-                    "Queue with name '{}' must be defined in "
-                    "'predefined_queues'."
-                ).format(queue))
+                raise UndefinedQueueException(
+                    f"Queue with name '{queue}' must be defined in 'predefined_queues'."
+                )
+
             q = self.predefined_queues[queue]
             c = self._predefined_queue_async_clients[queue] = \
-                AsyncSQSConnection(
+                    AsyncSQSConnection(
                     sqs_connection=self.sqs(queue=queue),
                     region=q.get('region', self.region)
             )
@@ -794,15 +787,8 @@ class Channel(virtual.Channel):
     def endpoint_url(self):
         if self.conninfo.hostname is not None:
             scheme = 'https' if self.is_secure else 'http'
-            if self.conninfo.port is not None:
-                port = f':{self.conninfo.port}'
-            else:
-                port = ''
-            return '{}://{}{}'.format(
-                scheme,
-                self.conninfo.hostname,
-                port
-            )
+            port = f':{self.conninfo.port}' if self.conninfo.port is not None else ''
+            return f'{scheme}://{self.conninfo.hostname}{port}'
 
     @cached_property
     def wait_time_seconds(self):

@@ -22,7 +22,7 @@ QPID_MODULE = 'kombu.transport.qpid'
 
 @pytest.fixture
 def disable_runtime_dependency_check(patching):
-    mock_dependency_is_none = patching(QPID_MODULE + '.dependency_is_none')
+    mock_dependency_is_none = patching(f'{QPID_MODULE}.dependency_is_none')
     mock_dependency_is_none.return_value = False
     return mock_dependency_is_none
 
@@ -126,7 +126,7 @@ class test_QoS_reject:
 
     @pytest.fixture(autouse=True)
     def setup_qpid(self, patching):
-        self.mock_qpid = patching(QPID_MODULE + '.qpid')
+        self.mock_qpid = patching(f'{QPID_MODULE}.qpid')
         self.mock_Disposition = self.mock_qpid.messaging.Disposition
         self.mock_RELEASED = self.mock_qpid.messaging.RELEASED
         self.mock_REJECTED = self.mock_qpid.messaging.REJECTED
@@ -172,7 +172,7 @@ class test_QoS:
 
     def add_n_messages_to_qos(self, n, qos):
         """Add N mock messages into the passed in qos object"""
-        for i in range(n):
+        for _ in range(n):
             self.add_message_to_qos(qos)
 
     def add_message_to_qos(self, qos):
@@ -224,7 +224,7 @@ class test_QoS:
 @pytest.mark.skip(reason='Not supported in Python3')
 class ConnectionTestBase:
 
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.qpid')
     def setup(self, mock_qpid):
         self.connection_options = {
             'host': 'localhost',
@@ -260,9 +260,9 @@ class test_Connection__init__(ConnectionTestBase):
         created_conn = self.mock_qpid_connection.establish.return_value
         assert self.conn._qpid_conn is created_conn
 
-    @patch(QPID_MODULE + '.ConnectionError', new=(QpidException, ))
-    @patch(QPID_MODULE + '.sys.exc_info')
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.ConnectionError', new=(QpidException, ))
+    @patch(f'{QPID_MODULE}.sys.exc_info')
+    @patch(f'{QPID_MODULE}.qpid')
     def test_mutates_ConnError_by_message(self, mock_qpid, mock_exc_info):
         text = 'connection-forced: Authentication failed(320)'
         my_conn_error = QpidException(text=text)
@@ -278,9 +278,9 @@ class test_Connection__init__(ConnectionTestBase):
         else:
             self.fail('ConnectionError type was not mutated correctly')
 
-    @patch(QPID_MODULE + '.ConnectionError', new=(QpidException, ))
-    @patch(QPID_MODULE + '.sys.exc_info')
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.ConnectionError', new=(QpidException, ))
+    @patch(f'{QPID_MODULE}.sys.exc_info')
+    @patch(f'{QPID_MODULE}.qpid')
     def test_mutates_ConnError_by_code(self, mock_qpid, mock_exc_info):
         my_conn_error = QpidException(code=320, text='someothertext')
         mock_qpid.messaging.Connection.establish.side_effect = my_conn_error
@@ -295,9 +295,9 @@ class test_Connection__init__(ConnectionTestBase):
         else:
             self.fail('ConnectionError type was not mutated correctly')
 
-    @patch(QPID_MODULE + '.ConnectionError', new=(QpidException, ))
-    @patch(QPID_MODULE + '.sys.exc_info')
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.ConnectionError', new=(QpidException, ))
+    @patch(f'{QPID_MODULE}.sys.exc_info')
+    @patch(f'{QPID_MODULE}.qpid')
     def test_connection__init__mutates_ConnError_by_message2(self, mock_qpid,
                                                              mock_exc_info):
         """
@@ -309,7 +309,7 @@ class test_Connection__init__(ConnectionTestBase):
         """
         my_conn_error = QpidException()
         my_conn_error.text = 'Error in sasl_client_start (-4) SASL(-4): no '\
-                             'mechanism available'
+                                 'mechanism available'
         mock_qpid.messaging.Connection.establish.side_effect = my_conn_error
         mock_exc_info.return_value = ('a', 'b', None)
         try:
@@ -322,9 +322,9 @@ class test_Connection__init__(ConnectionTestBase):
         else:
             self.fail('ConnectionError type was not mutated correctly')
 
-    @patch(QPID_MODULE + '.ConnectionError', new=(QpidException, ))
-    @patch(QPID_MODULE + '.sys.exc_info')
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.ConnectionError', new=(QpidException, ))
+    @patch(f'{QPID_MODULE}.sys.exc_info')
+    @patch(f'{QPID_MODULE}.qpid')
     def test_unknown_connection_error(self, mock_qpid, mock_exc_info):
         # If we get a connection error that we don't understand,
         # bubble it up as-is
@@ -339,8 +339,8 @@ class test_Connection__init__(ConnectionTestBase):
             self.fail('Connection should have thrown an exception')
 
     @patch.object(Transport, 'channel_errors', new=(QpidException, ))
-    @patch(QPID_MODULE + '.qpid')
-    @patch(QPID_MODULE + '.ConnectionError', new=IOError)
+    @patch(f'{QPID_MODULE}.qpid')
+    @patch(f'{QPID_MODULE}.ConnectionError', new=IOError)
     def test_non_qpid_error_raises(self, mock_qpid):
         mock_Qpid_Connection = mock_qpid.messaging.Connection
         my_conn_error = SyntaxError()
@@ -349,8 +349,8 @@ class test_Connection__init__(ConnectionTestBase):
         with pytest.raises(SyntaxError):
             Connection(**self.connection_options)
 
-    @patch(QPID_MODULE + '.qpid')
-    @patch(QPID_MODULE + '.ConnectionError', new=IOError)
+    @patch(f'{QPID_MODULE}.qpid')
+    @patch(f'{QPID_MODULE}.ConnectionError', new=IOError)
     def test_non_auth_conn_error_raises(self, mock_qpid):
         mock_Qpid_Connection = mock_qpid.messaging.Connection
         my_conn_error = IOError()
@@ -414,7 +414,7 @@ class ChannelTestBase:
 
     @pytest.fixture(autouse=True)
     def setup_channel(self, patching):
-        self.mock_qpidtoollibs = patching(QPID_MODULE + '.qpidtoollibs')
+        self.mock_qpidtoollibs = patching(f'{QPID_MODULE}.qpidtoollibs')
         self.mock_broker_agent = self.mock_qpidtoollibs.BrokerAgent
         self.conn = Mock()
         self.transport = Mock()
@@ -453,7 +453,7 @@ class test_Channel_purge(ChannelTestBase):
         result = self.channel._purge(self.mock_queue)
         assert result == 5
 
-    @patch(QPID_MODULE + '.NotFound', new=QpidException)
+    @patch(f'{QPID_MODULE}.NotFound', new=QpidException)
     def test_raises_channel_error_if_queue_does_not_exist(self):
         self.mock_broker_agent.return_value.getQueue.return_value = None
         with pytest.raises(QpidException):
@@ -463,7 +463,7 @@ class test_Channel_purge(ChannelTestBase):
 @pytest.mark.skip(reason='Not supported in Python3')
 class test_Channel_put(ChannelTestBase):
 
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.qpid')
     def test_channel__put_onto_queue(self, mock_qpid):
         routing_key = 'routingkey'
         mock_message = Mock()
@@ -484,7 +484,7 @@ class test_Channel_put(ChannelTestBase):
         )
         mock_sender.close.assert_called_with()
 
-    @patch(QPID_MODULE + '.qpid')
+    @patch(f'{QPID_MODULE}.qpid')
     def test_channel__put_onto_exchange(self, mock_qpid):
         mock_routing_key = 'routingkey'
         mock_exchange_name = 'myexchange'
@@ -813,7 +813,7 @@ class test_Channel_queue_delete(ChannelTestBase):
 @pytest.mark.skip(reason='Not supported in Python3')
 class test_Channel:
 
-    @patch(QPID_MODULE + '.qpidtoollibs')
+    @patch(f'{QPID_MODULE}.qpidtoollibs')
     def setup(self, mock_qpidtoollibs):
         self.mock_connection = Mock()
         self.mock_qpid_connection = Mock()
@@ -1139,14 +1139,14 @@ class test_Channel:
         self.my_channel._purge.assert_called_with(mock_queue)
         assert purge_result is result
 
-    @patch(QPID_MODULE + '.Channel.qos')
+    @patch(f'{QPID_MODULE}.Channel.qos')
     def test_basic_ack(self, mock_qos):
         """Test that basic_ack calls the QoS object properly."""
         mock_delivery_tag = Mock()
         self.my_channel.basic_ack(mock_delivery_tag)
         mock_qos.ack.assert_called_with(mock_delivery_tag)
 
-    @patch(QPID_MODULE + '.Channel.qos')
+    @patch(f'{QPID_MODULE}.Channel.qos')
     def test_basic_reject(self, mock_qos):
         """Test that basic_reject calls the QoS object properly."""
         mock_delivery_tag = Mock()
@@ -1199,9 +1199,9 @@ class test_Channel:
                 result['properties']['delivery_info']['priority'])
 
     @patch('__builtin__.buffer')
-    @patch(QPID_MODULE + '.Channel.body_encoding')
-    @patch(QPID_MODULE + '.Channel.encode_body')
-    @patch(QPID_MODULE + '.Channel._put')
+    @patch(f'{QPID_MODULE}.Channel.body_encoding')
+    @patch(f'{QPID_MODULE}.Channel.encode_body')
+    @patch(f'{QPID_MODULE}.Channel._put')
     def test_basic_publish(self, mock_put,
                            mock_encode_body,
                            mock_body_encoding,
@@ -1238,7 +1238,7 @@ class test_Channel:
             mock_routing_key, mock_message, mock_exchange,
         )
 
-    @patch(QPID_MODULE + '.Channel.codecs')
+    @patch(f'{QPID_MODULE}.Channel.codecs')
     def test_encode_body_expected_encoding(self, mock_codecs):
         """Test if encode_body() works when encoding is set correctly"""
         mock_body = Mock()
@@ -1250,7 +1250,7 @@ class test_Channel:
         expected_result = (mock_encoded_result, 'base64')
         assert expected_result == result
 
-    @patch(QPID_MODULE + '.Channel.codecs')
+    @patch(f'{QPID_MODULE}.Channel.codecs')
     def test_encode_body_not_expected_encoding(self, mock_codecs):
         """Test if encode_body() works when encoding is not set correctly."""
         mock_body = Mock()
@@ -1258,7 +1258,7 @@ class test_Channel:
         expected_result = mock_body, None
         assert expected_result == result
 
-    @patch(QPID_MODULE + '.Channel.codecs')
+    @patch(f'{QPID_MODULE}.Channel.codecs')
     def test_decode_body_expected_encoding(self, mock_codecs):
         """Test if decode_body() works when encoding is set correctly."""
         mock_body = Mock()
@@ -1269,7 +1269,7 @@ class test_Channel:
         result = self.my_channel.decode_body(mock_body, encoding='base64')
         assert mock_decoded_result == result
 
-    @patch(QPID_MODULE + '.Channel.codecs')
+    @patch(f'{QPID_MODULE}.Channel.codecs')
     def test_decode_body_not_expected_encoding(self, mock_codecs):
         """Test if decode_body() works when encoding is not set correctly."""
         mock_body = Mock()
@@ -1280,9 +1280,8 @@ class test_Channel:
         """Test that typeof() finds an exchange that already exists."""
         mock_exchange = Mock()
         mock_qpid_exchange = Mock()
-        mock_attributes = {}
         mock_type = Mock()
-        mock_attributes['type'] = mock_type
+        mock_attributes = {'type': mock_type}
         mock_qpid_exchange.getAttributes.return_value = mock_attributes
         self.mock_broker.getExchange.return_value = mock_qpid_exchange
         result = self.my_channel.typeof(mock_exchange)
@@ -1309,7 +1308,8 @@ class test_Transport__init__:
     @pytest.fixture(autouse=True)
     def mock_transport_init(self, patching):
         self.mock_base_Transport__init__ = patching(
-            QPID_MODULE + '.base.Transport.__init__')
+            f'{QPID_MODULE}.base.Transport.__init__'
+        )
 
     def test_Transport___init___calls_verify_runtime_environment(self):
         Transport(Mock())
@@ -1348,7 +1348,7 @@ class test_Transport_drain_events:
         return mock_receiver
 
     def test_socket_timeout_raised_when_all_receivers_empty(self):
-        with patch(QPID_MODULE + '.QpidEmpty', new=QpidException):
+        with patch(f'{QPID_MODULE}.QpidEmpty', new=QpidException):
             self.transport.session.next_receiver.side_effect = QpidException()
             with pytest.raises(socket.timeout):
                 self.transport.drain_events(Mock())
@@ -1671,7 +1671,7 @@ class test_Transport_Qpid_callback_handlers_async:
 
     @pytest.fixture(autouse=True)
     def setup_self(self, patching, disable_runtime_dependency_check):
-        self.mock_os_write = patching(QPID_MODULE + '.os.write')
+        self.mock_os_write = patching(f'{QPID_MODULE}.os.write')
         self.transport = Transport(Mock())
         self.transport.register_with_event_loop(Mock(), Mock())
 
@@ -1690,7 +1690,7 @@ class test_Transport_Qpid_callback_handlers_sync:
 
     @pytest.fixture(autouse=True)
     def setup(self, patching, disable_runtime_dependency_check):
-        self.mock_os_write = patching(QPID_MODULE + '.os.write')
+        self.mock_os_write = patching(f'{QPID_MODULE}.os.write')
         self.transport = Transport(Mock())
 
     def test__qpid_message_ready_handler_dows_not_write(self):
@@ -1708,7 +1708,7 @@ class test_Transport_on_readable:
 
     @pytest.fixture(autouse=True)
     def setup_self(self, patching, disable_runtime_dependency_check):
-        self.mock_os_read = patching(QPID_MODULE + '.os.read')
+        self.mock_os_read = patching(f'{QPID_MODULE}.os.read')
 
         self.mock_drain_events = patching.object(Transport, 'drain_events')
         self.transport = Transport(Mock())
@@ -1743,7 +1743,7 @@ class test_Transport_verify_runtime_environment:
         patching.object(Transport, 'verify_runtime_environment')
         self.transport = Transport(Mock())
 
-    @patch(QPID_MODULE + '.PY3', new=True)
+    @patch(f'{QPID_MODULE}.PY3', new=True)
     def test_raises_exception_for_Python3(self):
         with pytest.raises(RuntimeError):
             self.verify_runtime_environment(self.transport)
@@ -1754,13 +1754,13 @@ class test_Transport_verify_runtime_environment:
         with pytest.raises(RuntimeError):
             self.verify_runtime_environment(self.transport)
 
-    @patch(QPID_MODULE + '.dependency_is_none')
+    @patch(f'{QPID_MODULE}.dependency_is_none')
     def test_raises_exc_dep_missing(self, mock_dep_is_none):
         mock_dep_is_none.return_value = True
         with pytest.raises(RuntimeError):
             self.verify_runtime_environment(self.transport)
 
-    @patch(QPID_MODULE + '.dependency_is_none')
+    @patch(f'{QPID_MODULE}.dependency_is_none')
     def test_calls_dependency_is_none(self, mock_dep_is_none):
         mock_dep_is_none.return_value = False
         self.verify_runtime_environment(self.transport)
@@ -1799,20 +1799,20 @@ class test_Transport:
         result_params = my_transport.default_connection_params
         assert correct_params == result_params
 
-    @patch(QPID_MODULE + '.os.close')
+    @patch(f'{QPID_MODULE}.os.close')
     def test_del_sync(self, close):
         my_transport = Transport(self.mock_client)
         my_transport.__del__()
         close.assert_not_called()
 
-    @patch(QPID_MODULE + '.os.close')
+    @patch(f'{QPID_MODULE}.os.close')
     def test_del_async(self, close):
         my_transport = Transport(self.mock_client)
         my_transport.register_with_event_loop(Mock(), Mock())
         my_transport.__del__()
         close.assert_called()
 
-    @patch(QPID_MODULE + '.os.close')
+    @patch(f'{QPID_MODULE}.os.close')
     def test_del_async_failed(self, close):
         close.side_effect = OSError()
         my_transport = Transport(self.mock_client)
